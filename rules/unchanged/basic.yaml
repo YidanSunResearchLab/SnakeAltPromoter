@@ -1,0 +1,27 @@
+name: basic
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - star>=2.7.10a
+  - hisat2>=2.2.1
+  - salmon>=1.10.1
+  - samtools>=1.17
+  - htseq>=2.0.5
+  - gffread>=0.12.7 
+  - bioconductor-dexseq>=1.48.0
+  - bioconductor-proactiv>=1.12.0
+  - bioconductor-genomicfeatures>=1.54.1
+  - bioconductor-rtracklayer>=1.62.0
+  - r-base>=4.3
+  - bioconductor-deseq2=1.42.0
+  - bioconductor-edger=4.0.0
+  - bioconductor-genomicranges=1.38.0
+  - bioconductor-ensembldb=2.26.0
+  - bioconductor-genomicalignments=1.38.0
+  - bioconductor-annotationdbi=1.64.1
+  - r-dplyr=1.1.4
+  - r-ggplot2=3.5.1
+  - r-reshape2=1.4.4
+  - r-ggpubr=0.6.0

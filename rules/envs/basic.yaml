@@ -1,0 +1,15 @@
+name: basic
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  #did not include python because it is easy in conflict
+  - star==2.7.11b
+  - hisat2==2.2.1
+  - salmon==1.10.3
+  - samtools
+  - htseq==2.0.5
+  - gffread==0.12.7 
+  - htseq==2.0.5
+
+

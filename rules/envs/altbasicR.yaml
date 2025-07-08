@@ -1,0 +1,14 @@
+name: altbasicR
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  #did not include python because it is easy in conflict
+  - salmon==1.10.3
+  - bioconductor-proactiv==1.16.0
+  - bioconductor-edger=4.4.0
+  - r-readr=2.1.5
+  - rseqc=5.0.4
+  - subread=2.1.1
+  - bioconductor-tximport=1.34.0
+  - bioconductor-genomicranges=1.58.0
