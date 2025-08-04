@@ -4,22 +4,12 @@ channels:
   - conda-forge
 dependencies:
   #did not include python because it is easy in conflict
-  - r-base=4.4.0
-  - bioconductor-dexseq==1.52.0
+  - salmon==1.10.3
   - bioconductor-proactiv==1.16.0
   - bioconductor-edger=4.4.0
   - r-readr=2.1.5
   - rseqc=5.0.4
-  - r-gridextra=2.3
-  - r-ggplot2=3.5.2
-  - r-ggvenn=0.1.10
-  - r-rtsne=0.17
-  - r-reshape2=1.4.4
-  - r-ggpubr=0.6.0
-  - r-future.apply=1.20.0
   - subread=2.1.1
   - bioconductor-tximport=1.34.0
   - bioconductor-genomicranges=1.58.0
-  - bioconductor-apeglm=1.28.0
-  - r-mass
-  - r-viridis
+  - bioconductor-limma=3.62.1

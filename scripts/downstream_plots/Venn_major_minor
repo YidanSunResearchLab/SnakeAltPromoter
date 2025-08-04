@@ -1,0 +1,295 @@
+# activate environment: /mnt/citadel2/research/shared/AltPromoterFlow/genome/.snakemake_conda/3ea3da478f24d1f8a438361e1dd371ca_
+
+
+#Libraries
+library(ggvenn)
+library(ggplot2)
+
+
+#Load files
+CAGE_minor <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/cage/merge_tot/Minor_promoterId_overall.rds")
+CAGE_major <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/cage/merge_tot/Major_promoterId_overall.rds")
+salmon_minor <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/salmon/merge_tot/Minor_promoterId_overall.rds")
+salmon_major <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/salmon/merge_tot/Major_promoterId_overall.rds")
+dexseq_minor <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/dexseq/merge_tot/Minor_promoterId_overall.rds")
+dexseq_major <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/dexseq/merge_tot/Major_promoterId_overall.rds")
+proactiv_major <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/proactiv/merge_tot/Major_promoterId_overall.rds")
+proactiv_minor <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/proactiv/merge_tot/Minor_promoterId_overall.rds")
+out_dir <- "/mnt/citadel2/research/shared/AltPromoterFlow/Heart/major_minor"
+
+
+fill_colors <- c("#8DA0CB", "#E78AC3")
+
+
+#Find common
+cage_salmon <- intersect(CAGE_major, salmon_major)
+cage_proactiv <- intersect(CAGE_major, proactiv_major)
+cage_dexseq <- intersect(CAGE_major, dexseq_major)
+shared_all <- Reduce(intersect, list(salmon_major, proactiv_major, dexseq_major, CAGE_major))
+write.table(cage_salmon, file = file.path(out_dir, "cage_salmon_major.txt"), quote = FALSE, row.names = FALSE, col.names = FALSE)
+write.table(cage_proactiv, file = file.path(out_dir, "cage_proactiv_major.txt"), quote = FALSE, row.names = FALSE, col.names = FALSE)
+write.table(cage_dexseq, file = file.path(out_dir, "cage_dexseq_major.txt"), quote = FALSE, row.names = FALSE, col.names = FALSE)
+write.table(shared_all, file = file.path(out_dir, "cage_all3_major.txt"), quote = FALSE, row.names = FALSE, col.names = FALSE)
+
+
+#Major list
+major_list_s <- list(
+  Salmon = salmon_major,
+  CAGE = CAGE_major
+)
+
+#Major list
+major_list_d <- list(
+  DEXSeq = dexseq_major,
+  CAGE = CAGE_major
+)
+
+#Major list
+major_list_p <- list(
+  proActiv = proactiv_major,
+  CAGE = CAGE_major
+)
+
+#Major plot
+ggvenn(
+  major_list_s,
+  fill_color = fill_colors,
+  stroke_size = 0.5,
+  text_size = 5,
+  show_percentage = FALSE
+) -> p
+ggsave(file = file.path(out_dir,"sc_major_promoter_venn_ggvenn.pdf"), p, width = 6, height = 6)
+
+
+ggvenn(
+  major_list_d,
+  fill_color = fill_colors,
+  stroke_size = 0.5,
+  text_size = 5,
+  show_percentage = FALSE
+) -> p
+ggsave(file = file.path(out_dir,"dc_major_promoter_venn_ggvenn.pdf"), p, width = 6, height = 6)
+
+ggvenn(
+  major_list_p,
+  fill_color = fill_colors,
+  stroke_size = 0.5,
+  text_size = 5,
+  show_percentage = FALSE
+) -> p
+ggsave(file = file.path(out_dir,"pc_major_promoter_venn_ggvenn.pdf"), p, width = 6, height = 6)
+
+
+
+
+
+
+
+
+
+
+
+
+
+#Find common
+cage_salmon <- intersect(CAGE_minor, salmon_minor)
+cage_proactiv <- intersect(CAGE_minor, proactiv_minor)
+cage_dexseq <- intersect(CAGE_minor, dexseq_minor)
+shared_all <- Reduce(intersect, list(salmon_minor, proactiv_minor, dexseq_minor, CAGE_minor))
+write.table(cage_salmon, file = file.path(out_dir, "cage_salmon_minor.txt"), quote = FALSE, row.names = FALSE, col.names = FALSE)
+write.table(cage_proactiv, file = file.path(out_dir, "cage_proactiv_minor.txt"), quote = FALSE, row.names = FALSE, col.names = FALSE)
+write.table(cage_dexseq, file = file.path(out_dir, "cage_dexseq_minor.txt"), quote = FALSE, row.names = FALSE, col.names = FALSE)
+write.table(shared_all, file = file.path(out_dir, "cage_all3_minor.txt"), quote = FALSE, row.names = FALSE, col.names = FALSE)
+
+#Minor list
+minor_list_s <- list(
+  Salmon = salmon_minor,
+  CAGE = CAGE_minor
+)
+
+minor_list_d <- list(
+  DEXSeq = dexseq_minor,
+  CAGE = CAGE_minor
+)
+
+minor_list_p <- list(
+  proActiv = proactiv_minor,
+  CAGE = CAGE_minor
+)
+
+#Minor plot
+ggvenn(
+  minor_list_s,
+  fill_color = fill_colors,
+  stroke_size = 0.5,
+  text_size = 5,
+  show_percentage = FALSE
+) -> p
+ggsave(file = file.path(out_dir, "sc_minor_promoter_venn_ggvenn.pdf"), p, width = 6, height = 6)
+
+ggvenn(
+  minor_list_d,
+  fill_color = fill_colors,
+  stroke_size = 0.5,
+  text_size = 5,
+  show_percentage = FALSE
+) -> p
+ggsave(file = file.path(out_dir, "dc_minor_promoter_venn_ggvenn.pdf"), p, width = 6, height = 6)
+
+ggvenn(
+  minor_list_p,
+  fill_color = fill_colors,
+  stroke_size = 0.5,
+  text_size = 5,
+  show_percentage = FALSE
+) -> p
+ggsave(file = file.path(out_dir, "pc_minor_promoter_venn_ggvenn.pdf"), p, width = 6, height = 6)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+anno <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/genome/organisms/hg38/Annotation/proActiv_promoter_annotation.rds")
+pc <- anno@promoterCoordinates
+internal_map <- as.data.frame(mcols(pc))[, c("promoterId", "internalPromoter")]
+
+CAGE_minor     <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/cage/merge_tot/Minor_promoterId_overall.rds")
+CAGE_major     <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/cage/merge_tot/Major_promoterId_overall.rds")
+salmon_minor   <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/salmon/merge_tot/Minor_promoterId_overall.rds")
+salmon_major   <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/salmon/merge_tot/Major_promoterId_overall.rds")
+dexseq_minor   <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/dexseq/merge_tot/Minor_promoterId_overall.rds")
+dexseq_major   <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/dexseq/merge_tot/Major_promoterId_overall.rds")
+proactiv_minor <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/proactiv/merge_tot/Minor_promoterId_overall.rds")
+proactiv_major <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/proactiv/merge_tot/Major_promoterId_overall.rds")
+
+groups <- list(
+  CAGE_major     = CAGE_major,
+  CAGE_minor     = CAGE_minor,
+  Salmon_major   = salmon_major,
+  Salmon_minor   = salmon_minor,
+  DEXSeq_major   = dexseq_major,
+  DEXSeq_minor   = dexseq_minor,
+  proActiv_major = proactiv_major,
+  proActiv_minor = proactiv_minor
+)
+
+check_internal_status <- function(ids, group_name) {
+  df <- merge(
+    data.frame(promoterId = ids),
+    internal_map,
+    by = "promoterId",
+    all.x = TRUE
+  )
+  total <- nrow(df)
+  na_count    <- sum(is.na(df$internalPromoter))
+  true_count  <- sum(df$internalPromoter %in% TRUE, na.rm = TRUE)
+
+  cat(sprintf("%-15s | total: %5d | NA: %4d (%.1f%%) | TRUE: %4d (%.1f%%)\n",
+              group_name, total, na_count, 100 * na_count / total,
+              true_count, 100 * true_count / total))
+
+  write.table(df$promoterId[is.na(df$internalPromoter)],
+              file = paste0(group_name, "_internalNA.txt"),
+              row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+  write.table(df$promoterId[df$internalPromoter %in% TRUE],
+              file = paste0(group_name, "_internalTRUE.txt"),
+              row.names = FALSE, col.names = FALSE, quote = FALSE)
+}
+
+cat("Group           | Total |  NA   |  TRUE\n")
+cat("---------------------------------------------\n")
+invisible(lapply(names(groups), function(g) {
+  check_internal_status(groups[[g]], g)
+}))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+> dexseq  <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/dexseq/merge_tot/Summary_classified.rds")
+> proactiv <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/proactiv/merge_tot/Summary_classified.rds")
+> salmon <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/salmon/merge_tot/Summary_classified.rds")
+> cage <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/Heart/cage/merge_tot/Summary_classified.rds")
+
+methods <- list(
+  CAGE     = cage,
+  Salmon   = salmon,
+  DEXSeq   = dexseq,
+  proActiv = proactiv
+)
+
+inactive_thresholds <- c(0.1, 0.13, 0.15, 0.2, 0.23)
+major_thresholds    <- c(0.27, 0.3, 0.35)
+
+result <- lapply(names(methods), function(method_name) {
+  df <- methods[[method_name]]
+
+  inactive_sub <- df[df$overall.class == "Inactive", ]
+  major_sub    <- df[df$overall.class == "Major",    ]
+
+
+  inact_counts <- sapply(inactive_thresholds, function(th) {
+    sum(inactive_sub$overall.mean > th, na.rm = TRUE)
+  })
+  major_counts <- sapply(major_thresholds, function(th) {
+    sum(major_sub$overall.mean < th, na.rm = TRUE)
+  })
+
+
+  inact_below_025 <- sum(inactive_sub$overall.mean < 0.25, na.rm = TRUE)
+  major_above_025 <- sum(major_sub$overall.mean > 0.25, na.rm = TRUE)
+
+  data.frame(
+    Method = method_name,
+    t(inact_counts),
+    t(major_counts),
+    Inactive_lt_0.25 = inact_below_025,
+    Major_gt_0.25    = major_above_025,
+    row.names = NULL
+  )
+})
+
+final_df <- do.call(rbind, result)
+colnames(final_df) <- c(
+  "Method",
+  paste0("Inactive> ", inactive_thresholds),
+  paste0("Major< ", major_thresholds),
+  "Inactive< 0.25",
+  "Major> 0.25"
+)
+
+
+# ----------------------------------
+final_df
+
+    Method Inactive> 0.1 Inactive> 0.13 Inactive> 0.15 Inactive> 0.2
+1     CAGE          8151           7160           3679          2662
+2   Salmon         12986           7422           6866          2917
+3   DEXSeq         13716           8539           6880          2667
+4 proActiv          6062           3375           3023          1848
+  Inactive> 0.23 Major< 0.27 Major< 0.3 Major< 0.35 Inactive< 0.25 Major> 0.25
+1            831         181        729        1421          92558       20508
+2           1762         757       1689        3064          58628       40997
+3           1105         529       1661        3006          63684       38508
+4            484         100        412         903          96491       16422

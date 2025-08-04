@@ -16,21 +16,24 @@ library(ggpubr)
 # Parse and validate inputs
 # --------------------- #
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) != 7) {
-  stop("Usage: Rscript proactiv_plots.R <output_dir> <promoter_rds> <row_data> <result> <gene_expr> <cell_lines> <condition>")
+if (length(args) != 6) {
+  stop("Usage: Rscript proactiv_plots.R <output_dir> <promoter_rds> <row_data> <se_file> <cell_lines> <condition>")
 }
 output_dir        <- args[1]
 promoter_rds      <- args[2]
 row_data <- args[3]
-result_file       <- args[4]
-gene_expr_file    <- args[5]
-cell_lines        <- strsplit(args[6], " ")[[1]]
-condition <- strsplit(args[7], ",")[[1]]
-#condition <- strsplit("CK CK KD KD KD", " ")[[1]]
+se_file <- args[4]
+cell_lines_raw        <- strsplit(args[5], " ")[[1]]
+cell_lines <- make.names(cell_lines_raw)
+names(cell_lines_raw) <- cell_lines 
+print(cell_lines)
+print(cell_lines_raw)
+condition <- strsplit(args[6], ",")[[1]]
+print(condition)
 
 stopifnot(file.exists(promoter_rds),
-          file.exists(row_data),
-          file.exists(gene_expr_file))
+          file.exists(row_data))
+
 if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
 
 # --------------------- #
@@ -40,6 +43,10 @@ if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
 # ----- Load Global data -------------------
 # Data frame to access subset
 rowData <- as.data.frame(readRDS(row_data))
+cat("Reading se_file:", se_file, "\n")
+se <- readRDS(se_file)
+print(class(se))
+activity <- assays(se)$absolutePromoterActivity
 
 # ----- Theme and Color for all plots -------------------------------------------
 plot_theme <- theme_classic() + theme(
@@ -55,7 +62,10 @@ cols_type <- c("Major" = "#ff1e56", "Minor" = "#ffac41", "Inactive" = "#323232")
 
 make_plots <- function(cl) {
   message("Processing cell line: ", cl)
+  #cl_for_path <- cell_lines_raw[[cl]]
+  #cl_dir <- file.path(output_dir, cl_for_path)
   cl_dir <- file.path(output_dir, cl)
+  cl_for_path <- cl
   dir.create(cl_dir, showWarnings = FALSE, recursive = TRUE)
 
   col_mean  <- paste0(cl, ".mean")
@@ -68,6 +78,7 @@ make_plots <- function(cl) {
 # Bar is divided to segments of level (Major, Minor, Inactive), each with promoter counts labelled.
 
   plot_cat_percentage <- function() {
+    message("Generating promoter_activity_category_percentage plot...")
     df_cat <- rowData %>%
       # Filter out NA values to avoid counting them.
       filter(!is.na(.data[[col_class]])) %>%
@@ -97,6 +108,7 @@ make_plots <- function(cl) {
   # 3 bars with different colors for each promoter category.
 
   plot_activity_comparison <- function() {
+    message("Generating promoter_activity_category_comparison plot...")
     # Extract gene Id with at least one minor promoter: possible for alternative promoter usage.
     minor_genes <- rowData$geneId[rowData[[col_class]] == "Minor"]
     # rowData is filtered to only include promoters of these genes.
@@ -132,6 +144,7 @@ make_plots <- function(cl) {
 # The percentage of total promoter positions larger than 1 out of all promoter positions is labelled at the top of the bar.
 
   plot_position_category <- function() {
+    message("Generating promoter position category plot...")
     # Cap promoter positions greater than 5 as 5. Further promoter counts are usually not large so could be grouped.
     rowData$promoterPosition <- ifelse(rowData$promoterPosition > 5, 5, rowData$promoterPosition)
     # Filter to include only active promoters (Major and Minor)
@@ -224,6 +237,7 @@ make_plots <- function(cl) {
   # The closer from the slope = 1 line, the more contribution the major promoter has.
 
   plot_gene_corr <- function() {
+    message("Generating promoter_activity_geneexpression_correlation plot...")
     # Only keep Major promoters for correlation analysis.
     majors <- rowData %>% filter(.data[[col_class]] == "Major")
     # x axis is the average gene expression; y axis is the average promoter activity.
@@ -242,6 +256,7 @@ make_plots <- function(cl) {
   # Differs from Plot 1 in that inactive counts in genes that include active promoters are not counted, so inactive counts are lower.
 
   plot_genewise_percentage <- function() {
+    message("Generating promoter_activity_category_percentage_genewise plot...")
     # Group all promoters by geneId. Each gene is now a list of promoter classes its promoters belong to.
     gene_split <- split(rowData[[col_class]], rowData$geneId)
     # Count the number of genes with at least one Major or Minor promoter.
@@ -285,7 +300,7 @@ make_plots <- function(cl) {
 
   # A horizontally stacked bar plot showing the percentage of genes for each category.
   # x-axis is the percentage of active promoters.
-  
+    message("Generating single/multiple promoter activity category plot...")
     active_promoter_category <- function(x) {
       # Filter out inactive promoters.
       if (any(x %in% "Major")) {
@@ -333,12 +348,38 @@ make_plots <- function(cl) {
     
   # Graph from function of each graph and save---------------------------------------------------
   # Name file according to its cell line; save file to the directory named by its cell line.
-  ggsave(plot_cat_percentage(), file = file.path(cl_dir, paste0(cl, "_promoter_activity_category_percentage.pdf")), width = 2.7, height = 2.9, units = "in", dpi = 300)
-  ggsave(plot_activity_comparison(), file = file.path(cl_dir, paste0(cl, "_promoter_activity_category_comparison.pdf")), width = 2.5, height = 2.5, units = "in", dpi = 300)
-  ggsave(plot_position_category(), file = file.path(cl_dir, paste0(cl, "_promoter_activity_position_category.pdf")), width = 3, height = 3, units = "in", dpi = 300)
-  ggsave(plot_gene_corr(), file = file.path(cl_dir, paste0(cl, "_promoter_activity_geneexpression_correlation.pdf")), width = 3, height = 3, units = "in", dpi = 300)
-  ggsave(plot_genewise_percentage(), file = file.path(cl_dir, paste0(cl, "_promoter_activity_category_percentage_genewise.pdf")), width = 2.7, height = 3, units = "in", dpi = 300)
-  ggsave(p6, file = file.path(cl_dir, paste0(cl, "_promoter_activity_single_multiple_category.pdf")), width = 2.5, height = 2.5, units = "in", dpi = 300)
+  
+  out_file <- file.path(cl_dir, paste0(cl_for_path, "_promoter_activity_category_percentage.pdf"))
+  ggsave(plot_cat_percentage(), file = out_file, width = 2.7, height = 2.9, units = "in", dpi = 300)
+  message("Saved: ", out_file)
+
+  out_file <- file.path(cl_dir, paste0(cl_for_path, "_promoter_activity_category_comparison.pdf"))
+  ggsave(plot_activity_comparison(), file = out_file, width = 2.5, height = 2.5, units = "in", dpi = 300)
+  message("Saved: ", out_file)
+
+  out_file <- file.path(cl_dir, paste0(cl_for_path, "_promoter_activity_position_category.pdf"))
+  ggsave(plot_position_category(), file = out_file, width = 3, height = 3, units = "in", dpi = 300)
+  message("Saved: ", out_file)
+
+  out_file <- file.path(cl_dir, paste0(cl_for_path, "_promoter_activity_geneexpression_correlation.pdf"))
+  ggsave(plot_gene_corr(), file = out_file, width = 3, height = 3, units = "in", dpi = 300)
+  message("Saved: ", out_file)
+
+  out_file <- file.path(cl_dir, paste0(cl_for_path, "_promoter_activity_category_percentage_genewise.pdf"))
+  ggsave(plot_genewise_percentage(), file = out_file, width = 2.7, height = 3, units = "in", dpi = 300)
+  message("Saved: ", out_file)
+
+  out_file <- file.path(cl_dir, paste0(cl_for_path, "_promoter_activity_single_multiple_category.pdf"))
+  ggsave(p6, file = out_file, width = 2.5, height = 2.5, units = "in", dpi = 300)
+  message("Saved: ", out_file)
+
+#  cl_for_path <- cell_lines_raw[[cl]]
+#  ggsave(plot_cat_percentage(), file = file.path(cl_dir, paste0(cl_for_path, "_promoter_activity_category_percentage.pdf")), width = 2.7, height = 2.9, units = "in", dpi = 300)
+#  ggsave(plot_activity_comparison(), file = file.path(cl_dir, paste0(cl_for_path, "_promoter_activity_category_comparison.pdf")), width = 2.5, height = 2.5, units = "in", dpi = 300)
+#  ggsave(plot_position_category(), file = file.path(cl_dir, paste0(cl_for_path, "_promoter_activity_position_category.pdf")), width = 3, height = 3, units = "in", dpi = 300)
+#  ggsave(plot_gene_corr(), file = file.path(cl_dir, paste0(cl_for_path, "_promoter_activity_geneexpression_correlation.pdf")), width = 3, height = 3, units = "in", dpi = 300)
+#  ggsave(plot_genewise_percentage(), file = file.path(cl_dir, paste0(cl_for_path, "_promoter_activity_category_percentage_genewise.pdf")), width = 2.7, height = 3, units = "in", dpi = 300)
+#  ggsave(p6, file = file.path(cl_dir, paste0(cl_for_path, "_promoter_activity_single_multiple_category.pdf")), width = 2.5, height = 2.5, units = "in", dpi = 300)
 
   message("[", cl, "] finished")
 }
@@ -346,22 +387,22 @@ make_plots <- function(cl) {
 # Parallel execution ---------------------------------------
 # Use multiple cores for different cell lines to speed up the plotting process.
 # Set up parallel processing with one less than total cores to avoid overloading.
-plan(multisession, workers = min(length(cell_lines), availableCores() - 1))
+#plan(multisession, workers = min(length(cell_lines), availableCores() - 1))
 # apply function to each cell line
-future_lapply(cell_lines, make_plots)
-
-  message("Plots 1-6 completed for all cell lines.")
+#future_lapply(cell_lines, make_plots)
+make_plots("overall")
+message("Plots 1-6 completed for overall.")
 
 # =======================
 # Generate Plots that do not need to iterate through each cell line
 # =======================
-
+output_dir <- file.path(output_dir, "overall")
 # Plot 7: promoter_activity_number_hist_all
 
 # A bar plot showing the distribution of the number of promoters per gene across all genes.
 # x axis is the number of promoters; y axis is the number of genes.
 # Plot 7 includes all genes, while Plot 8 excludes genes with only one promoter.
-
+message("Generating promoter_activity_number_hist_all plot...")
 promoterAnnotationData <- readRDS(promoter_rds)
 # Get promoter-to-gene mapping table: each row links a promoterId to its geneId.
 promoter_id_mapping <- promoterIdMapping(promoterAnnotationData)
@@ -393,6 +434,7 @@ p7 <- ggplot(plot_hist, aes(x = Var1, y = Freq)) +
 # Plot 8: promoter_activity_number_hist_without1 -----------------------------------
 
 # Remove first row (corresponds to promoter count == 1)
+message("Generating promoter_activity_number_hist_without1 plot...")
 plot_hist2 <- plot_hist[-1, ]
 p8 <- ggplot(plot_hist2, aes(x = Var1, y = Freq)) +
         geom_col(fill = "white", colour = "black") +
@@ -409,8 +451,8 @@ p8 <- ggplot(plot_hist2, aes(x = Var1, y = Freq)) +
         )
 
 # Run the plots and save them to the output directory
-ggsave(p7, file = file.path(output_dir, "promoter_activity_number_hist_all.pdf"),      width = 3.5, height = 3, units = "in", dpi = 300)
-ggsave(p8, file = file.path(output_dir, "promoter_activity_number_hist_without1.pdf"), width = 3.5, height = 3, units = "in", dpi = 300)
+ggsave(p7, file = file.path(output_dir, "overall_promoter_activity_number_hist_all.pdf"),      width = 3.5, height = 3, units = "in", dpi = 300)
+ggsave(p8, file = file.path(output_dir, "overall_promoter_activity_number_hist_without1.pdf"), width = 3.5, height = 3, units = "in", dpi = 300)
 
 message("Plots 6-8 completed. All figures generated successfully.")
 
@@ -421,8 +463,7 @@ message("Plots 6-8 completed. All figures generated successfully.")
 # X axis is tSNE1; y axis is tSNE2.
 # Ideally, samples from the same cell line cluster together, indicating similar promoter activity patterns.
 message("Generating global t-SNE plot …")
-# Load the complete result output from proActiv
-se <- readRDS(result_file)
+# Load the complete result output
 # Extract promoter activity matrix from the assay
 mat <- assays(se)$absolutePromoterActivity
 # Filter out promoters with no activity across all samples.
@@ -435,6 +476,7 @@ tsne_df <- data.frame(t(mat))
 #cond <- factor(rep(cell_lines, length.out = nrow(tsne_df)))
 # Create a sample label vector (cell line name for each row/sample)
 #cond <- factor(condition)
+condition <- make.names(condition) 
 cond <- factor(condition, levels = cell_lines)
 # Add a column for sample labels
 tsne_df$Sample <- cond
@@ -442,13 +484,19 @@ tsne_df$Sample <- cond
 # Set random seed for reproducibility
 set.seed(40)
 # Run t-SNE on expression matrix, excluding the Sample column.
+#pca_res <- prcomp(tsne_df[ , !names(tsne_df) %in% "Sample"], scale.=TRUE)
+#Y <- Rtsne(pca_res$x[, 1:2], perplexity=1)$Y
+cat("Input matrix for t-SNE has", nrow(tsne_df), "samples (rows)\n")
+print(rownames(tsne_df))
 # Y is a 2D matrix with t-SNE coordinates for each sample
 Y <- Rtsne(as.matrix(tsne_df[ , !names(tsne_df) %in% "Sample"]), perplexity = 1)$Y
+rownames(Y) <- rownames(tsne_df)
+print(Y)
 # Define colors for each cell line and match by name.
 cell_cols <- setNames(c("#ff1e56", "#ffac41", "#323232")[seq_along(cell_lines)],
                       cell_lines)
 
-pdf(file.path(output_dir, "promoter_activity_tsne_plot.pdf"), width = 12/2.54, height = 10/2.54)
+pdf(file.path(output_dir, "overall_promoter_activity_tsne_plot.pdf"), width = 12/2.54, height = 10/2.54)
 # Allow drawing outside the plot region for legend.
 par(xpd = NA)
 # Set shape, filled color, border color, size, and aspect ratio for the t-SNE plot.

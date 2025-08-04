@@ -3,12 +3,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="AltPromoterFlow",
+    name="SnakeAltPromoter",
     version="0.1.0",
     description="A Snakemake pipeline for alternative promoter analysis",
     author="Yidan Sun",
     author_email="syidan@wustl.edu",
-    url="https://github.com/YidanSunResearchLab/OrbitAltPromoter",  # Updated username
+    url="https://github.com/YidanSunResearchLab/SnakeAltPromoter",  # Updated username
     packages=find_packages(),  # Includes workflows/
     install_requires=[
         "snakemake>=8.28.0",  # Core dependency
@@ -25,7 +25,7 @@ setup(
     entry_points={
         "console_scripts": [
             "Genomesetup = workflows.Genomesetup:main",
-            "Altpromoterflow = workflows.Altpromoterflow:main",
+            "Snakealtpromoter = workflows.Snakealtpromoter:main",
         ]
     },
     classifiers=[

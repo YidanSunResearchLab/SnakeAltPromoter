@@ -5,11 +5,13 @@ import json
 import re
 import glob
 import sys
+import csv
+
 
 def main():
     # Argument parser setup
     parser = argparse.ArgumentParser(description="Run a comprehensive pipeline integrating HiC-Pro|FitHiChIP, and Chromap|MAPS for HiChIP/PLAC-Seq data analysis.")
-    parser.add_argument("-p", "--pipeline", choices=["Maps", "Fithichip", "Hichipper", "Hicdcplus", "All"], default="All", help="Software used to perform the data analysis")
+    parser.add_argument("-p", "--pipeline", choices=["Maps", "Fithichip", "Hichipper", "Hicdcplus", "All"], default="Maps", help="Software used to perform the data analysis")
     parser.add_argument("-i", "--input_dir", required=True, help="Path to the input directory containing paired-end FASTQ gz files (e.g., /path/to/fastqs/).")
     parser.add_argument("-o", "--output_dir", required=True, help="Path to the output directory where results will be saved (e.g., /path/to/output/).")
     parser.add_argument("--organism", required=True, help="Reference genome assembly to use, created by the Genomesetup step. For example: 'hg38', 'dm6', 'ce3', or 'mm10'.")
@@ -31,7 +33,12 @@ def main():
     parser.add_argument("--hichipper_params", default="NA", help="Optional space-separated parameters to pass to Hichipper (e.g., '--read-length 75'). Default: NA.")
     parser.add_argument("--hicdc_params", default="NA", help="Optional space-separated parameters to pass to Hicdcplus (e.g., '--PeakFile peaks.bed'). Default: NA.")
     parser.add_argument("--samples_comparison", default="NA NA", help="Sample names needed for differential analysis (e.g., --samples_comparison 'SampleA SampleB'). Default: NA.")
-
+    parser.add_argument("--reference_condition", default="NA", help="Referece condition in differential analysis (e.g., --reference_condition 'Disease'). Default: NA.")
+    parser.add_argument("--baseline_condition", default="NA", help="Baseline condition in differential analysis (e.g., --baseline_condition 'Healthy'). Default: NA.")
+    parser.add_argument("--method", type=str, default="rnaseq", choices=["salmon", "proactiv", "dexseq", "cage", "rnaseq"], help="Which method to run: salmon / proactiv / dexseq / cage / rnaseq")
+    parser.add_argument("--reads", type=str, default="paired", choices=["single", "paired"], help=" Reads are single-ended or paired: single / paired")
+    parser.add_argument("--min_pFC", type=float, default=2.0, help="Additional threshold of minimum fold change of promoter activity for a promoter to be considered alternative promoter (default 2.0)")
+    parser.add_argument("--max_gFC", type=float, default=1.5, help="Additional threshold of maximum fold change of gene expression for a promoter to be considered alternative promoter (default 1.5)")
     # Parse known arguments, capturing extra Snakemake args
     args, extra_args = parser.parse_known_args()
 
@@ -42,7 +49,16 @@ def main():
     organism = args.organism
     genome_dir = args.genome_dir
     downsample_size = args.downsample_size
-    reads = ["R1", "R2"]
+    reads_choice = args.reads.lower()
+    if reads_choice == "paired":
+        reads = ["R1", "R2"]
+    elif reads_choice == "single":
+        reads = ["R1"]
+    else:
+        raise ValueError("Invalid --reads value. Must be 'single' or 'paired'.")
+
+    
+
     restriction_enzyme=args.restriction_enzyme
     bin_size = args.bin_size
     binning_range = args.binning_range
@@ -62,6 +78,11 @@ def main():
     maps_count_cutoff = args.maps_count_cutoff
     maps_ratio_cutoff = args.maps_ratio_cutoff
     fdr = args.fdr
+    method = args.method
+    reference_condition = args.reference_condition
+    baseline_condition = args.baseline_condition
+    min_pFC = args.min_pFC
+    max_gFC = args.max_gFC
 
     # Ensure output directory exists
     os.makedirs(output_dir, exist_ok=True)
@@ -71,9 +92,12 @@ def main():
 
     # Check if required files exist
     required_files = [
-        f"{genome_dir}/organisms/{organism}/{restriction_enzyme}/{bin_size}/{organism}.txt",
-        f"{genome_dir}/organisms/{organism}/{restriction_enzyme}/{bin_size}/restriction_enzyme.organism.txt",
-        f"{genome_dir}/organisms/{organism}/{restriction_enzyme}/{bin_size}/restriction_enzyme.hicdcplus.bintolen.txt.gz"
+        f"{genome_dir}/organisms/{organism}/STARIndex",
+        f"{genome_dir}/organisms/{organism}/Annotation.gtf",
+        f"{genome_dir}/organisms/{organism}/Annotation/genes.bed",
+        f"{genome_dir}/organisms/{organism}/Annotation/DEXSeq_flattened_exons.gff",
+        f"{genome_dir}/organisms/{organism}/Annotation/proActiv_promoter_annotation.rds",
+        f"{genome_dir}/organisms/{organism}/Annotation/genes_t2g.tsv"
     ]
 
     print("Checking required files...")  # Debug
@@ -97,42 +121,83 @@ def main():
             print("Warning: The provided peaks file does not exist. Please provide a valid file path for called peaks.", file=sys.stderr)
             sys.exit(1)
 
-
-    # Sample detection
     def detect_samples(input_dir):
+        """
+        Return dict(sample -> {"R1": path, "R2": path (optional)})
+        """
         pattern = re.compile(r"^(?P<sample>.+)_R(?P<read>[12])\.fastq\.gz$")
         samples_detected = {}
-        
-        for filename in os.listdir(input_dir):
-            match = pattern.match(filename)
-            if match:
-                sample = match.group("sample")
-                read = match.group("read")
-                samples_detected.setdefault(sample, {})[read] = filename
-        
-        # Validate that each sample has both R1 and R2
-        print("Detected samples and files:")
+
+        for fn in os.listdir(input_dir):
+            m = pattern.match(fn)
+            if not m:
+                continue
+            sample = m.group("sample")
+            read   = m.group("read")
+            key    = f"R{read}"
+            samples_detected.setdefault(sample, {})[key] = os.path.join(input_dir, fn)
+
         for sample, files in samples_detected.items():
-            print(f"Sample: {sample}, R1: {files['1']}, R2: {files['2']}")
-            if "1" not in files or "2" not in files:
-                raise ValueError(f"Sample {sample} missing R1 or R2 file.")
-        
-        return list(samples_detected.keys()), samples_detected
+            if "R1" not in files:
+                raise ValueError(f"Sample {sample} missing R1 file.")
+            if "R2" not in files:
+                print(f"Warning: Sample {sample} missing R2 – treated as single-end.", file=sys.stderr)
 
-    # Detect samples and print details
-    samples, samples_detected = detect_samples(input_dir)
-    samples_list = list(samples_detected.keys()) 
-    print("Samples loaded into config (as list):")
-    print(samples)
-    print("Full sample file map (R1/R2):")
-    print(json.dumps(samples_detected, indent=2))
-    for sample, files in samples_detected.items():
-        print(f"Sample: {sample}") #, R1: {files['1']}, R2: {files['2']}
+        return samples_detected
 
+
+    def load_conditions(sample_sheet_path):
+        """Return ordered list of sample names and dict(sampleName -> condition)"""
+        if not os.path.exists(sample_sheet_path):
+            raise FileNotFoundError(f"sampleSheet.tsv not found: {sample_sheet_path}")
+
+        sample_order = []
+        conditions = {}
+        with open(sample_sheet_path, newline="") as tsvfile:
+            reader = csv.DictReader(tsvfile, delimiter="\t")
+            for row in reader:
+                sample = row["sampleName"].strip()
+                cond   = row["condition"].strip()
+                sample_order.append(sample)
+                conditions[sample] = cond
+        return sample_order, conditions
+
+    # Main usage
+    sample_sheet_path = os.path.join(input_dir, "sampleSheet.tsv")
+    samples_detected = detect_samples(input_dir)
+    sample_order, condition_map = load_conditions(sample_sheet_path)
+
+    # Check for missing samples
+    missing = [s for s in sample_order if s not in samples_detected]
+    if missing:
+        raise ValueError(f"Samples in sampleSheet but not in input_dir: {missing}")
+
+    # Build ordered samples_dict with condition attached
+    samples_dict = {
+        s: {
+            "R1": samples_detected[s]["R1"],
+            "R2": samples_detected[s].get("R2"),
+            "condition": condition_map[s]
+        }
+        for s in sample_order
+    }
+
+
+    # Print for verification
+    print("Samples detected from directory & sampleSheet:")
+    for sample, files in samples_dict.items():
+        print(
+            f"  {sample}: "
+            f"R1 = {files['R1']}, "
+            f"R2 = {files.get('R2', 'NA')}, "
+            f"condition = {files['condition']}"
+        )
+
+    
     # Build Snakemake command
     snakemake_cmd = [
         "snakemake",
-        "--snakefile", os.path.join(script_dir, "../rules/Hichipsnake.Snakefile"),
+        "--snakefile", os.path.join(script_dir, "../rules/Altpromoterflow.Snakefile"),
         "--printshellcmds",
         "--directory", output_dir,
         "--use-conda",
@@ -146,8 +211,7 @@ def main():
         f"organism={organism}",
         f"genome_dir={genome_dir}",
         f"downsample_size={downsample_size}",
-        f"samples={json.dumps(samples)}",
-        #f"samples={json.dumps(samples_detected)}",
+        #f"samples={json.dumps(samples)}",
         f"reads={json.dumps(reads)}",
         f"restriction_enzyme={restriction_enzyme}",
         f"bin_size={bin_size}",
@@ -168,6 +232,13 @@ def main():
         f"hicdc_params={hicdc_params}",
         f"macs2_peaks={macs2_peaks}",
         f"samples_comparison={samples_comparison}",
+        f"samples_dict={json.dumps(samples_dict)}",
+        f"method={method}",
+        #f"reads={','.join(reads)}",
+        f"reference_condition={reference_condition}",
+        f"baseline_condition={baseline_condition}",
+        f"max_gFC={max_gFC}",
+        f"min_pFC={min_pFC}",
         "--cores", str(threads),
     ]
 

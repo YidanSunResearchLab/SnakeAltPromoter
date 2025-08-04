@@ -110,7 +110,9 @@ cat("Number of transcripts in promoter_counts_df:", nrow(promoter_counts_df), "\
 coord <- promoterCoordinates(promoterAnnotationData)
 # Filter out internal promoters
 # If internalPromoter is NA, set it to TRUE
-coord$internalPromoter[is.na(coord$internalPromoter)] <- TRUE
+#coord$internalPromoter[is.na(coord$internalPromoter)] <- TRUE
+# Set internalPromoter NA to FALSE to keep promoters of transcript with only one exon
+coord$internalPromoter[is.na(coord$internalPromoter)] <- FALSE
 # Extract promoter IDs that are not internal promoters
 promoter_ids <- coord$promoterId[!coord$internalPromoter]
 # Ensure promoter_ids does not contain duplicates
@@ -157,29 +159,38 @@ promoter_counts_agg <- promoter_counts_merged %>%
 promoter_counts_mat <- as.matrix(promoter_counts_agg[, -1, drop = FALSE])
 rownames(promoter_counts_mat) <- promoter_counts_agg$PROMOTERID
 
-# Filter promoters so the ones kept are annotated by proActiv
-promoterIdMapping <- promoterAnnotationData@promoterIdMapping
-promoter_ids <- unique(promoterIdMapping$promoterId)
-promoter_counts_mat <- promoter_counts_mat[rownames(promoter_counts_mat) %in% promoter_ids, , drop = FALSE]
-promoter_counts_mat <- promoter_counts_mat[!is.na(rownames(promoter_counts_mat)), , drop = FALSE]
-if (any(duplicated(rownames(promoter_counts_mat)))) {
-  warning("Duplicated promoterId found. Aggregating counts.")
-  promoter_counts_mat <- rowsum(promoter_counts_mat, group = rownames(promoter_counts_mat))
+# ----------------------------------------
+# Ensure all annotated external promoter IDs are present, fill missing with 0
+# ----------------------------------------
+
+# Get only external promoters (NA treated as FALSE = keep)
+coord <- promoterCoordinates(promoterAnnotationData)
+coord$internalPromoter[is.na(coord$internalPromoter)] <- FALSE
+external_ids <- unique(as.character(coord$promoterId[!coord$internalPromoter]))
+expected_promoter_ids <- external_ids
+
+# Check existing promoter IDs
+current_ids <- rownames(promoter_counts_mat)
+missing_ids <- setdiff(expected_promoter_ids, current_ids)
+cat("Number of promoterIds not found in counts: ", length(missing_ids), "\n")
+
+# Fill missing with 0s if needed
+if (length(missing_ids) > 0) {
+  missing_mat <- matrix(0, nrow = length(missing_ids), ncol = ncol(promoter_counts_mat),
+                        dimnames = list(missing_ids, colnames(promoter_counts_mat)))
+  promoter_counts_mat <- rbind(promoter_counts_mat, missing_mat)
 }
-cat("Final promoterId rows: ", nrow(promoter_counts_mat), "\n")
-cat("Expected from annotation: ", length(unique(promoterAnnotationData@promoterIdMapping$promoterId)), "\n")
-cat("Number of transcripts in quant.sf: ", nrow(promoter_counts_df), "\n")
-cat("Number of transcripts in tx2promoter: ", nrow(tx2promoter), "\n")
-cat("Number of overlapping TXNAMEs: ", length(intersect(promoter_counts_df$TXNAME, tx2promoter$TXNAME)), "\n")
-cat("Unique promoters with counts: ",
-    dplyr::n_distinct(promoter_counts_merged$PROMOTERID), "\n")
-cat("Rows after aggregation      : ",
-    nrow(promoter_counts_agg), "\n")
+
+# Reorder matrix rows to match external promoter annotation
+rownames_ok <- rownames(promoter_counts_mat)
+missing_after_pad <- setdiff(expected_promoter_ids, rownames_ok)
+if (length(missing_after_pad) > 0) {
+  stop("Still missing promoter IDs after padding: ",
+       paste(head(missing_after_pad), collapse = ", "))
+}
+
+promoter_counts_mat <- promoter_counts_mat[expected_promoter_ids, , drop = FALSE]
+cat("Final promoter count matrix size: ", dim(promoter_counts_mat)[1], " x ", dim(promoter_counts_mat)[2], "\n")
+
 # Save promoter counts
 saveRDS(promoter_counts_mat, file = file.path(output_dir, paste0(sample, "_promoter_counts.rds")))
-
-# Print warnings -----------------------------------
-if (length(warnings()) > 0) {
-  cat("\n=== WARNINGS ===\n")
-  print(warnings())
-}

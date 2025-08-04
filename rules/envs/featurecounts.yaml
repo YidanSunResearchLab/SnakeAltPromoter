@@ -1,0 +1,6 @@
+name: featurecounts
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - subread=2.1.1

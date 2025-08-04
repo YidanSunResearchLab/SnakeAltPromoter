@@ -162,6 +162,7 @@ dcounts.promoter <- merge(
   by.x = "dexseq", by.y = "row.names"
 )
 
+cat("Before aggregation: NAs in promoterId = ", sum(is.na(dcounts.promoter$promoterId)), "\n")
 # Aggregate exon counts into promoter counts by summing counts exon bins from the same promoter.
 dcounts.promoter.merged <- aggregate(. ~ promoterId,
                                      data = dcounts.promoter[, c("promoterId", colnames(dcounts))],
@@ -170,6 +171,9 @@ dcounts.promoter.merged <- aggregate(. ~ promoterId,
 # Set row names to promoterId and remove promoterId column so that the matrix has only counts.
 rownames(dcounts.promoter.merged) <- dcounts.promoter.merged$promoterId
 dcounts.promoter.merged <- dcounts.promoter.merged[, -1, drop = FALSE]
+na_like <- grep("^NA", rownames(dcounts.promoter.merged), value = TRUE)
+cat("NA-like promoter rownames after aggregation:", length(na_like), "\n")
+print(head(na_like))
 
 
 # ---------------------------------------------
@@ -178,7 +182,9 @@ dcounts.promoter.merged <- dcounts.promoter.merged[, -1, drop = FALSE]
 # Flag NAs in internalPromoter column as TRUE to ensure only external promoters are kept.
 na_mask <- is.na(promoterCoordinates(promoterAnnotationData)$internalPromoter)
 if (any(na_mask)) {
-  promoterCoordinates(promoterAnnotationData)$internalPromoter[na_mask] <- TRUE
+#  promoterCoordinates(promoterAnnotationData)$internalPromoter[na_mask] <- TRUE
+  # Set internalPromoter NA to FALSE to keep promoters of transcript with only one exon
+  promoterCoordinates(promoterAnnotationData)$internalPromoter[na_mask] <- FALSE
 }
 
 # Filter to keep only external promoters in promoterAnnotationData
@@ -188,10 +194,42 @@ promoterCoordinates(promoterAnnotationData) <- promoterCoordinates(promoterAnnot
 
 # Extract promoter counts from dcounts in the order of promoterAnnotationData.
 # This ensures that the counts are aligned with the promoter IDs and are only consisting of external promoters.
-promoterCounts.star <- dcounts.promoter.merged[
-  as.character(promoterCoordinates(promoterAnnotationData)$promoterId),
-  , drop = FALSE
-]
+
+requested_ids <- as.character(promoterCoordinates(promoterAnnotationData)$promoterId)
+
+available_ids <- rownames(dcounts.promoter.merged)
+
+missing_ids <- setdiff(requested_ids, available_ids)
+cat("Number of promoterIds not found in dcounts.promoter.merged:", length(missing_ids), "\n")
+print(head(missing_ids))
+
+fill_matrix <- matrix(0,
+                      nrow = length(missing_ids),
+                      ncol = ncol(dcounts.promoter.merged),
+                      dimnames = list(missing_ids, colnames(dcounts.promoter.merged)))
+
+full_counts <- rbind(dcounts.promoter.merged, fill_matrix)
+full_counts <- full_counts[requested_ids, , drop = FALSE]
+
+promoterCounts.star <- full_counts
+
+cat("==== Sanity check ====\n")
+cat("Total promoters in annotation:", length(requested_ids), "\n")
+cat("Rows in final promoterCounts.star:", nrow(promoterCounts.star), "\n")
+if (all(rownames(promoterCounts.star) == requested_ids)) {
+  cat("promoterCounts.star rownames exactly match promoterAnnotation order\n")
+} else {
+  cat("promoterCounts.star rownames do NOT match promoterAnnotation order\n")
+  mismatch_idx <- which(rownames(promoterCounts.star) != requested_ids)
+  cat("First mismatches at:\n")
+  print(head(data.frame(row = mismatch_idx,
+                        expected = requested_ids[mismatch_idx],
+                        actual = rownames(promoterCounts.star)[mismatch_idx])))
+}
+
+zero_promoters <- rowSums(promoterCounts.star) == 0
+cat("Number of promoters with total count = 0:", sum(zero_promoters), "\n")
+
 
 # Save one RDS file per sample
 for (i in seq_along(newnames)) {
