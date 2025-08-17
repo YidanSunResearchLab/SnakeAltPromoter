@@ -94,5 +94,5 @@ for (i in seq_along(cnt_list)) {
 }
 
 # Save combined matrix
-saveRDS(cnt_mat, file = file.path(out_dir, "combined_promoter_counts.rds"))
+saveRDS(cnt_mat, file = file.path(out_dir, "merged_promoter_counts.rds"))
 

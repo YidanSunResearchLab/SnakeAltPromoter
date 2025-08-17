@@ -46,7 +46,7 @@ rule all:
             [
                 output_dir + "/organisms/" + organism + "/" + organism + ".fa",
                 output_dir + "/organisms/" + organism + "/" + organism + ".chrom.sizes",
-                output_dir + "/organisms/" + organism + "/HISAT2Index/genome.6.ht2",
+                #output_dir + "/organisms/" + organism + "/HISAT2Index/genome.6.ht2",
                 output_dir + "/organisms/" + organism + "/STARIndex/SAindex",
                 #output_dir + "/organisms/SalmonIndex/seq.bin", change accordingly
                 #output_dir + "/organisms/{organism}/SalmonIndex", couldl not create conda environment
@@ -283,7 +283,6 @@ rule prepare_promoter_annotation:
     params:
         species=lambda wildcards: get_species(wildcards.organism),
         output_dir=output_dir + "/organisms/{organism}",
-        # script=workflow.basedir + "/scripts/prepare_promoter_annotation.R"
         script=workflow.basedir + "/../scripts/proactiv_prepare_promoter_annotation.R"
     conda: "envs/r.yaml"
     log: "logs/proactiv_prepare_{organism}.log"

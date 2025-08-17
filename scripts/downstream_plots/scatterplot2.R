@@ -319,6 +319,12 @@ proactiv_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/new_test_
 cage_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/new_test_for_sample_sheet/cage/differential/comparisons_/Heart_Failure_vs_Healthy/Promoter_differential_activity.rds")
 out_dir <- "/mnt/citadel2/research/syidan/Projects/SnakeAltPromoterResult/Heart_Failure_vs_Healthy"
 
+#gene_name = read.delim("/mnt/citadel2/research/syidan/Genomes/GRCh38/release-47-index/annotation/genes.symbol", header = FALSE, comment.char = "#")
+#cage$geneSymbol <- gene_name$V2[match(cage$geneId, gene_name$V1)]
+#write.table(unique(cage$geneSymbol[!is.na(cage$geneSymbol) & cage$FDR < 0.05 & cage$logFC > 0]),  file.path(out_dir,"cage_upregulated_genes.txt"),  quote = FALSE, row.names = FALSE, col.names = FALSE)
+#write.table(unique(cage$geneSymbol[!is.na(cage$geneSymbol) & cage$FDR < 0.05 & cage$logFC < 0]), file.path(out_dir,"cage_downregulated_genes.txt"), quote = FALSE, row.names = FALSE, col.names = FALSE)
+
+
 length(rownames(dexseq))
 length(rownames(cage))
 length(rownames(proactiv))

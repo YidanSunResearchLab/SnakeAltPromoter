@@ -1,13 +1,13 @@
-### `docs/Altpromoterflow.md`
+### `docs/Snakealtpromoter.md`
 
-# Altpromoterflow: Promoter Activity and Differential Analysis
+# Snakealtpromoter: Promoter Activity and Differential Analysis
 
-`Altpromoterflow` maps reads onto genome, quantifies promoter activity, and compares across conditions using Trim Galore, STAR, proActiv, Salmon, and DEXSeq scripts.
+`Snakealtpromoter` maps reads onto genome, quantifies promoter activity, and compares across conditions using Trim Galore, STAR, proActiv, Salmon, and DEXSeq scripts.
 
 
 ## Usage
 ```bash
-Altpromoterflow [options]
+Snakealtpromoter [options]
 ```
 
 ### Required Arguments
@@ -17,48 +17,32 @@ Altpromoterflow [options]
 - `--genome_dir`: Directory from Genomesetup step (e.g., `/abs/path/to/genome`).
 
 ### Optional Arguments
-- `--pipeline`: Analysis software to use. Options: Maps, Fithichip, Hichipper, Hicdcplus, All. Default: Maps.
 - `--downsample_size`: Number of valid pairs to downsample to (e.g., 50000000). Set to 0 to disable (default: 0).
-- `--restriction_enzyme`: Restriction enzyme used in the experiment. Options: mboi (default), hindiii, dpnii, bglii, ncoi, msei, hinfI, mnase, arima.
-- `--bin_size`: Interaction bin size in base pairs (e.g., 10000). Default: 5000.
-- `--binning_range`: Maximum distance for binning interactions in base pairs (e.g., 1000000). Default: 2000000.
-- `--length_cutoff`: Minimum fragment length for long contacts in base pairs (e.g., 1000). Default: 1000.
 - `--threads`: Number of CPU threads for parallel processing (e.g., 100). Default: 30.
-- `--fdr`: Minimum FDR threshold for significant interactions (e.g., 0.05). Default: 0.01.
-- `--macs2_peaks`: Optional path to a MACS2 peaks file (e.g., peaks.narrowPeak) from ChIP-seq data to refine interactions. Default: NA (none).
-- `--fithichip_BiasType`: FitHiChIP bias correction type. Options: 1 (coverage-based, default), 2 (ICE-based).
-- `--maps_count_cutoff`: Minimum read count for MAPS significant interactions (e.g., 5). Default: 5.
-- `--maps_ratio_cutoff`: Minimum observed-to-expected ratio for MAPS (e.g., 2.0). Default: 2.0.
-- `--maps_model`: Statistical model for MAPS regression. Options: pospoisson (default), negbinom.
-- `--maps_sex_chroms`: Sex chromosomes to include in MAPS analysis. Options: NA (none), X (default), Y, XY.
-- `--hicpro_params`: Optional HiC-Pro config file path. Default: NA (none).
-- `--hichipper_params`: Optional space-separated Hichipper parameters (e.g., --read-length 75). Default: NA (none).
-- `--hicdc_params`: Optional space-separated Hicdcplus parameters (e.g., --PeakFile peaks.bed). Default: NA (none).
-- `--samples_comparison`: Space-separated sample names for differential analysis (e.g., SampleA {sample}). Default: none.
-- `--reference_condition`: Sample name for reference condition in differential analysis (e.g., SampleA). Default: NA (none).
+- `--test_condition`: Sample name for reference condition in differential analysis (e.g., SampleA). Default: NA (none).
+- `--control_condition`: Baseline condition in differential analysis (e.g., --control_condition 'Healthy'). Default: NA.
 - `--method`: Method to be used for differential analysis in Maps pipeline. Options are proactiv, salmon, dexseq, all. Default: all (all three methods).
+- `--reads`: Reads are single-ended or paired: single / paired.
+- `--min_pFC`: Additional threshold of minimum fold change of promoter activity for a promoter to be considered alternative promoter (default 2.0). 
+- `--max_gFC`: Additional threshold of maximum fold change of gene expression for a promoter to be considered alternative promoter (default 1.5). 
 
 
 ### Example
 ```bash
-Altpromoterflow.py \
-  -i /path/to/your/fastqs/ \
-  -o /path/to/your/output/ \
-  --genome_dir /path/to/your/genome/ \
-  --organism hg38 \
-  --reference_condition SampleA \
-  --threads 30 \
-  --bin_size 5000 \
-  --downsample_size 50000000 \
-  --fdr 0.01 \
-  --maps_model negbinom \
-  --maps_sex_chroms X
+Snakealtpromoter.py \
+-i /path/to/input/fastqs/dir/ 
+--genome_dir /path/to/genomesetup/dir/ 
+-o /path/to/output/dir/ 
+--threads 30 
+--organism hg38 
+--control_condition Healthy 
+--test_condition Heart_Failure 
 ```
 
-## Altpromoterflow Output
+## Snakealtpromoter Output
 ```
-tree AltPromoterFlow/
-AltPromoterFlow/
+tree Snakealtpromoter/
+Snakealtpromoter/
 ├── bam
 │   ├── {sample}
 │   │   ├── {sample}.sorted.bam
@@ -269,7 +253,6 @@ AltPromoterFlow/
 ## Notes
 - FASTQ Naming: Files should be named {sample}_R1.fastq.gz and {sample}_R2.fastq.gz.
 - Downsampling: Use --downsample_size for uniform sample comparison.
-- Pipeline Selection: Choose All to run all tools, or specify a single tool (e.g., Maps) for targeted analysis.
-- Custom Parameters: Use --hicpro_params, --hichipper_params, or --hicdc_params to pass tool-specific options.
-- Differential Analysis: Provide --samples_comparison for pairwise sample comparisons (if implemented). Provide --reference_condition for reference condition used by proActiv. Provide --method for the method used for differential analysis.
+- Pipeline Selection: Choose All to run all tools, or specify a single tool (e.g., ProActiv, Salmon or DEXSeq) for targeted analysis.
+- Differential Analysis: Provide --samples_comparison for pairwise sample comparisons (if implemented). Provide --test_condition for reference condition used by proActiv. Provide --method for the method used for differential analysis.
 

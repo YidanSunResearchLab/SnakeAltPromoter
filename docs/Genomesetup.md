@@ -2,7 +2,7 @@
 
 # Genomesetup: Genome Index Preparation
 
-`Genomesetup` sets up genome indices and restriction enzyme fragments for HiChIP/PLAC-seq analysis using Chromap, Hic-pro and MAPS scripts.
+`Genomesetup` sets up genome indices and promoter annotation for following ProActiv, Salmon and DEXSeq analysis.
 
 
 ## Usage
@@ -13,11 +13,10 @@ Genomesetup [options]
 ### Required Arguments
 - `--organism`: Genome assembly (e.g., `hg38`, `mm10`).
 - `--organism_fasta`: Absolute path to genome FASTA file (e.g., `/tmp/Genomes/GRCh38/genome.fa`). 
+- `--genes_gtf`: Absolute path to gene gtf annotation file (e.g., `/tmp/Genomes/GRCh38/genes.gtf`). 
 
 ### Optional Arguments
-- `-o/--output_dir`: Directory to store genome files (e.g., `~/syidan/Projects/genome`).
-- `--restriction_enzyme`: Restriction enzyme (e.g., 'hindiii', 'dpnii', 'bglii', 'ncoi', 'msei', 'hinfI', 'mnase', 'arima'). Default: `mboi`.
-- `--bin_size`: Bin size in base pairs (e.g., `5000`). Default: 5000.
+- `-o/--output_dir`: Directory to store genome files (e.g., `genome`).
 - `--threads`: Number of CPU threads (e.g., `30`). Default: 30.
 
 ### Example
@@ -25,9 +24,8 @@ Genomesetup [options]
 Genomesetup \
   --organism hg38 \
   --organism_fasta /path/to/your/genome.fa \
+  --genes_gtf /path/to/your/genes.gtf \
   -o ./genome \
-  --restriction_enzyme mboi \
-  --bin_size 5000 \
   --threads 30
 ```
 
@@ -157,4 +155,4 @@ organisms/hg38
 
 ## Notes
 - Ensure the FASTA file has chromosome names prefixed with `chr` (e.g., `chr1`).
-- Use this output folder as `--genome_dir` in `Hichipsnake.py`.
+- Use this output folder as `--genome_dir` in `Snakealtpromoter.py`.

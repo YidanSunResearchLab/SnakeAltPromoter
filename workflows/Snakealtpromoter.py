@@ -17,24 +17,9 @@ def main():
     parser.add_argument("--organism", required=True, help="Reference genome assembly to use, created by the Genomesetup step. For example: 'hg38', 'dm6', 'ce3', or 'mm10'.")
     parser.add_argument("--genome_dir", required=True, help="Absolute path to the directory containing pre-generated genome files, created by the Genomesetup step (e.g., /absolute/path/to/genomes/).")
     parser.add_argument("--downsample_size", type=int, default=0, help="Number of valid pairs to downsample to for analysis. Set to 0 to disable downsampling (default: 0).")
-    parser.add_argument("--restriction_enzyme", default="mboi", help="Restriction enzyme used in the HiChIP experiment. Options include 'mboi' (default), 'hindiii', 'dpnii', 'bglii', 'ncoi', 'msei', 'hinfI', 'mnase', 'arima'")
-    parser.add_argument("--bin_size", type=int, default=5000, help="Bin size in base pairs for interaction analysis (default: 5000 bp).")
-    parser.add_argument("--binning_range", type=int, default=2000000, help="Maximum distance in base pairs for binning interactions (default: 2000000 bp).")
-    parser.add_argument("--length_cutoff", type=int, default=1000, help="Minimum fragment length in base pairs to include in analysis (default: 1000 bp).")
     parser.add_argument("--threads", type=int, default=30, help="Number of CPU threads to use for parallel processing (default: 30).")
-    parser.add_argument("--fdr", type=float, default=0.01, help="Minimum FDR threshold for significant interactions (default: 0.01).")
-    parser.add_argument("--macs2_peaks", default="NA", help="Optional path to a MACS2 peaks file (e.g., narrowPeak) from ChIP-seq data to refine interactions (default: none).")
-    parser.add_argument("--fithichip_BiasType", default="1", help="FitHiChIP Bias correction type: coverage (1) or ICE (2) based. Default: 1.")
-    parser.add_argument("--maps_count_cutoff", type=int, default=5, help="Minimum read count threshold for calling significant interactions in MAPS (default: 5).")
-    parser.add_argument("--maps_ratio_cutoff", type=float, default=2.0, help="Minimum observed-to-expected ratio for significant interactions in MAPS (default: 2.0).")
-    parser.add_argument("--maps_model", default="pospoisson", choices=["pospoisson", "negbinom"], help="Statistical model for regression analysis. Options: 'pospoisson' (default) or 'negbinom'.")
-    parser.add_argument("--maps_sex_chroms", default="X", choices=["NA", "X", "Y", "XY"], help="Sex chromosomes to include in analysis. Options: 'NA' (none, default), 'X', 'Y', or 'XY'.")
-    parser.add_argument("--hicpro_params", default="NA", help="Optional config file to pass to HiC-Pro. Default: NA.")
-    parser.add_argument("--hichipper_params", default="NA", help="Optional space-separated parameters to pass to Hichipper (e.g., '--read-length 75'). Default: NA.")
-    parser.add_argument("--hicdc_params", default="NA", help="Optional space-separated parameters to pass to Hicdcplus (e.g., '--PeakFile peaks.bed'). Default: NA.")
-    parser.add_argument("--samples_comparison", default="NA NA", help="Sample names needed for differential analysis (e.g., --samples_comparison 'SampleA SampleB'). Default: NA.")
-    parser.add_argument("--reference_condition", default="NA", help="Referece condition in differential analysis (e.g., --reference_condition 'Disease'). Default: NA.")
-    parser.add_argument("--baseline_condition", default="NA", help="Baseline condition in differential analysis (e.g., --baseline_condition 'Healthy'). Default: NA.")
+    parser.add_argument("--test_condition", default="NA", help="Referece condition in differential analysis (e.g., --test_condition 'Disease'). Default: NA.")
+    parser.add_argument("--control_condition", default="NA", help="Baseline condition in differential analysis (e.g., --control_condition 'Healthy'). Default: NA.")
     parser.add_argument("--method", type=str, default="rnaseq", choices=["salmon", "proactiv", "dexseq", "cage", "rnaseq"], help="Which method to run: salmon / proactiv / dexseq / cage / rnaseq")
     parser.add_argument("--reads", type=str, default="paired", choices=["single", "paired"], help=" Reads are single-ended or paired: single / paired")
     parser.add_argument("--min_pFC", type=float, default=2.0, help="Additional threshold of minimum fold change of promoter activity for a promoter to be considered alternative promoter (default 2.0)")
@@ -59,28 +44,10 @@ def main():
 
     
 
-    restriction_enzyme=args.restriction_enzyme
-    bin_size = args.bin_size
-    binning_range = args.binning_range
-    length_cutoff = args.length_cutoff
     threads = args.threads
-    maps_model = args.maps_model
-    maps_sex_chroms = args.maps_sex_chroms
-    optical_duplicate_distance = 0  # Hardcoded default
-    mapq = 30  # Hardcoded default
-    generate_hic = 1  # Hardcoded default
-    macs2_peaks = args.macs2_peaks
-    hicpro_params = args.hicpro_params
-    fithichip_BiasType = args.fithichip_BiasType
-    hichipper_params = args.hichipper_params
-    hicdc_params = args.hicdc_params
-    samples_comparison = args.samples_comparison
-    maps_count_cutoff = args.maps_count_cutoff
-    maps_ratio_cutoff = args.maps_ratio_cutoff
-    fdr = args.fdr
     method = args.method
-    reference_condition = args.reference_condition
-    baseline_condition = args.baseline_condition
+    test_condition = args.test_condition
+    control_condition = args.control_condition
     min_pFC = args.min_pFC
     max_gFC = args.max_gFC
 
@@ -114,12 +81,6 @@ def main():
             print("Exiting due to missing file.")  # Debug to stdout
             sys.exit(1)
     print("All required files found.")  # Debug
-
-    # Peak file detection
-    if macs2_peaks != "NA":
-        if not os.path.exists(macs2_peaks):
-            print("Warning: The provided peaks file does not exist. Please provide a valid file path for called peaks.", file=sys.stderr)
-            sys.exit(1)
 
     def detect_samples(input_dir):
         """
@@ -197,13 +158,11 @@ def main():
     # Build Snakemake command
     snakemake_cmd = [
         "snakemake",
-        "--snakefile", os.path.join(script_dir, "../rules/Altpromoterflow.Snakefile"),
+        "--snakefile", os.path.join(script_dir, "../rules/Snakealtpromoter.Snakefile"),
         "--printshellcmds",
         "--directory", output_dir,
         "--use-conda",
         "--conda-prefix", os.path.join(genome_dir, ".snakemake_conda"),
-        #"--use-singularity",
-        #"--singularity-args", f"-B {genome_dir} -B {singularity_tmpdir} -B {singularity_cachedir}",
         "--config",
         f"pipeline={pipeline}",
         f"input_dir={input_dir}",
@@ -213,30 +172,12 @@ def main():
         f"downsample_size={downsample_size}",
         #f"samples={json.dumps(samples)}",
         f"reads={json.dumps(reads)}",
-        f"restriction_enzyme={restriction_enzyme}",
-        f"bin_size={bin_size}",
-        f"binning_range={binning_range}",
-        f"generate_hic={generate_hic}",
-        f"mapq={mapq}",
-        f"length_cutoff={length_cutoff}",
         f"threads={threads}",
-        f"maps_model={maps_model}",
-        f"maps_sex_chroms={maps_sex_chroms}",
-        f"maps_count_cutoff={maps_count_cutoff}",
-        f"maps_ratio_cutoff={maps_ratio_cutoff}",
-        f"fdr={fdr}",
-        f"optical_duplicate_distance={optical_duplicate_distance}",
-        f"hicpro_params={hicpro_params}",
-        f"fithichip_BiasType={fithichip_BiasType}",
-        f"hichipper_params={hichipper_params}",
-        f"hicdc_params={hicdc_params}",
-        f"macs2_peaks={macs2_peaks}",
-        f"samples_comparison={samples_comparison}",
         f"samples_dict={json.dumps(samples_dict)}",
         f"method={method}",
         #f"reads={','.join(reads)}",
-        f"reference_condition={reference_condition}",
-        f"baseline_condition={baseline_condition}",
+        f"test_condition={test_condition}",
+        f"control_condition={control_condition}",
         f"max_gFC={max_gFC}",
         f"min_pFC={min_pFC}",
         "--cores", str(threads),
@@ -247,10 +188,10 @@ def main():
         snakemake_cmd.extend(extra_args)
 
     # Generate unique log file name
-    log_pattern = os.path.join(output_dir, "hichipsnake_run_*.log")
-    log_number = max([int(re.search(r"hichipsnake_run_(\d+)\.log", f).group(1)) 
+    log_pattern = os.path.join(output_dir, "snakealtpromoter_run_*.log")
+    log_number = max([int(re.search(r"snakealtpromoter_run_(\d+)\.log", f).group(1)) 
                     for f in glob.glob(log_pattern)], default=0) + 1
-    log_file_path = os.path.join(output_dir, f"hichipsnake_run_{log_number}.log")
+    log_file_path = os.path.join(output_dir, f"snakealtpromoter_run_{log_number}.log")
 
     # Execute Snakemake with logging
     with open(log_file_path, "w") as log_file:

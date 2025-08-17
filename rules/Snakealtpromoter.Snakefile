@@ -34,8 +34,8 @@ threads = config.get("threads", 16)
 downsample_size = config.get("downsample_size", 0)
 trimmer_options = config.get("trimmer_options", "")
 star_options = config.get("star_options", "")
-reference_condition = config.get("reference_condition", "")
-baseline_condition = config.get("baseline_condition", "")
+test_condition = config.get("test_condition", "")
+control_condition = config.get("control_condition", "")
 max_gFC = config.get("max_gFC", 1.5)
 min_pFC = config.get("min_pFC", 2.0)
 
@@ -176,6 +176,7 @@ if do_cage:
                             "single_multiple_category", "number_hist_all", "number_hist_without1", "tsne_plot"
                         ])
 
+input_all.append(output_dir + "/multiqc/multiqc_report.html")
 
 rule all:
     input:
@@ -263,7 +264,7 @@ rule trim_galore_single:
         "logs/trim_galore.{sample}.log"
     benchmark:
         "benchmarks/trim_galore.{sample}.txt"
-    threads: 8
+    threads: threads
     conda: "envs/altbasic.yaml"
     shell:
         """
@@ -292,7 +293,7 @@ rule trim_galore_paired:
         "logs/trim_galore.{sample}.log"
     benchmark:
         "benchmarks/trim_galore.{sample}.txt"
-    threads: 8
+    threads: threads
     conda: "envs/altbasic.yaml"
     shell:
         """
@@ -397,7 +398,7 @@ rule proactiv_count:
         sj_files = [f"{output_dir}/STAR/junctions/{s}.SJ.out.tab" for s in samples]
     params:
         condition = condition_str,
-        reference_condition = reference_condition,
+        test_condition = test_condition,
         batch = batch_str,
         fit_script="../scripts/sanity_check.R",
         sj_files_str = " ".join([f"{output_dir}/STAR/junctions/{s}.SJ.out.tab" for s in samples])
@@ -503,8 +504,8 @@ rule proactiv_differential:
     params:
         samples       = samples,
         condition = condition_str,
-        baseline      = baseline_condition,
-        reference    = reference_condition,
+        baseline      = control_condition,
+        reference    = test_condition,
         min_promoter_fold_change = min_pFC,
         max_gene_fold_change = max_gFC,
     log:
@@ -713,6 +714,7 @@ rule dexseq_promoter_merge:
         newnames=samples,
     log:
           "logs/dexseq_counts_merge.log"    
+    conda: "envs/dexR.yaml"
     shell:
         """
         Rscript {workflow.basedir}/../scripts/merge_promoter_counts.R \
@@ -774,7 +776,7 @@ rule dexseq_promoter_promoter_classification:
         newnames=samples,
         batch_unsorted = batch_str,
         fit_script="../scripts/sanity_check.R",
-        reference_condition = reference_condition,
+        test_condition = test_condition,
         norm_method=config.get("norm_method", "deseq2")
         #norm_method="edger"
     log:
@@ -807,8 +809,8 @@ rule dexseq_differential:
     params:
         samples       = samples,
         condition = condition_str,
-        baseline      = baseline_condition,
-        reference    = reference_condition,
+        baseline      = control_condition,
+        reference    = test_condition,
         min_promoter_fold_change = min_pFC,
         max_gene_fold_change = max_gFC,
     log:
@@ -1052,7 +1054,7 @@ rule salmon_promoter_classification:
         newnames=samples,
         batch_unsorted = batch_str,
         fit_script="../scripts/sanity_check.R",
-        reference_condition = reference_condition,
+        test_condition = test_condition,
         norm_method=config.get("norm_method", "deseq2")
         #norm_method="edger"
     log:
@@ -1085,8 +1087,8 @@ rule salmon_differential:
     params:
         samples       = samples,
         condition = condition_str,
-        baseline      = baseline_condition,
-        reference    = reference_condition,
+        baseline      = control_condition,
+        reference    = test_condition,
         min_promoter_fold_change = min_pFC,
         max_gene_fold_change = max_gFC,
     log:
@@ -1254,7 +1256,7 @@ rule cage_featurecounts:
         "logs/counts_separate/{sample}.log"
     params:
         strand=1
-    threads: 4
+    threads: threads
     conda: "envs/featurecounts.yaml"
     shell:
         """
@@ -1380,8 +1382,8 @@ rule cage_differential:
     params:
         samples       = samples,
         condition = condition_str,
-        baseline      = baseline_condition,
-        reference    = reference_condition,
+        baseline      = control_condition,
+        reference    = test_condition,
         min_promoter_fold_change = min_pFC,
         max_gene_fold_change = max_gFC,
     log:
@@ -1480,4 +1482,31 @@ rule cage_overall_plots:
             {input.SE} \
             "{params.condition_compare}" \
             "{params.condition}" > {log} 2>&1
+        """
+
+#############################################
+# MultiQC Rule
+#############################################
+rule multiqc:
+    input:
+        fastqc=expand(output_dir + "/fastqc/{sample}/{sample}_{read}_fastqc.zip", sample=samples, read=reads),
+        trim_galore=expand("logs/trim_galore.{sample}.log", sample=samples),
+        star=expand("logs/star.{sample}.log", sample=samples),
+        salmon=expand("logs/salmon_quant.{sample}.log", sample=samples) if do_salmon else [],
+        featurecounts=expand("logs/dexseq_featurecounts.{sample}.log", sample=samples) if do_dexseq else [],
+        cage=expand("logs/counts_separate/{sample}.log", sample=samples) if do_cage else []
+    output:
+        report=output_dir + "/multiqc/multiqc_report.html"
+    params:
+        outdir=output_dir + "/multiqc",
+        logdirs=[output_dir + "/fastqc", "logs"]
+    log:
+        "logs/multiqc.log"
+    benchmark:
+        "benchmarks/multiqc.txt"
+    conda: "envs/featurecounts.yaml"
+    shell:
+        """
+        mkdir -p {params.outdir}
+        multiqc {params.logdirs} -o {params.outdir} --filename multiqc_report.html > {log} 2>&1
         """
