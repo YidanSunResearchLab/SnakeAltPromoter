@@ -28,26 +28,27 @@
 SnakeAltPromoter offers three main commands:
 
 ### 1. Genome Setup
-Prepare genome indices and restriction fragments:
+Prepare genome indices and promoter annotation:
 ```bash
 Genomesetup \
   --organism hg38 \
   --organism_fasta /path/to/your/genome.fa \
+  --genes_gtf /path/to/your/genes.gtf \
   -o ./genome \
-  --threads 100
+  --threads 30
 ```
 
 ### 2.  RNA-Seq Processing for alternative promoter analysis
-Process FASTQs into interaction maps:
+Process FASTQs:
 ```bash
-Snakealtpromoter \
-  -i /home/Projects/hichip_real_samples/ \
-  --genome_dir /abs/path/to/genome \
-  -o /home/Projects/hichip_real_samples_output/ \
-  --threads 100 \
-  --organism hg38 \
-  --bin_size 5000 \
-  --downsample_size 50000000
+Snakealtpromoter.py \
+  -i /path/to/input/fastqs/dir/ 
+  --genome_dir /path/to/genomesetup/dir/ 
+  -o /path/to/output/dir/ 
+  --threads 30 
+  --organism hg38 
+  --control_condition Healthy 
+  --test_condition Heart_Failure 
 ```
 
 ## Documentation

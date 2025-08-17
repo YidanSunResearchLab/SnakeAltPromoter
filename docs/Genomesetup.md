@@ -62,16 +62,7 @@ organisms/hg38
 │       ├── hg38.chrom.sizes
 │       ├── hg38.fa
 │       ├── hg38.fa.fai
-│       ├── HISAT2Index
-│       │   ├── genome.1.ht2
-│       │   ├── genome.2.ht2
-│       │   ├── genome.3.ht2
-│       │   ├── genome.4.ht2
-│       │   ├── genome.5.ht2
-│       │   ├── genome.6.ht2
-│       │   ├── genome.7.ht2
-│       │   ├── genome.8.ht2
-│       │   └── genome.fa -> /mnt/citadel2/research/shared/test/genome/organisms/hg38/hg38.fa
+hg38/hg38.fa
 │       ├── main_chroms.txt
 │       ├── SalmonIndex
 │       │   ├── complete_ref_lens.bin
@@ -138,10 +129,6 @@ organisms/hg38
   - Includes chromosome info files  (e.g., `chrLength.txt`, `chrName.txt`, `chrNameLength.txt`, `chrStart.txt`) for mapping from genome onto chromosome position.
   - Includes parameters (e.g.,`genomeParameters.txt`) which includes genome version, FASTA file, Suffix Array index k-mer length, chromosome bin bits, sparsity of Suffix Array, splice junction overhang, GTF exon's feature name, transcript id from gtf, gene id from gtf, save splice junction format.
   - Creats binary files required for splice-aware RNA-seq alignment (e.g., `SA`, `SAindex`, `Genome`). 
-
-- **`HISAT2Index`**: Building reference index for HISAT2 (Hierarchical Indexing for Spliced Alignment of Transcripts 2).
-  - **`genome.fa -> /abs/path/to/hg38.fa`**: Symbolic link to the reference FASTA file used to build the index.
-  - **`genome.1.ht2 ~ genome.8.ht2`**: Index files required by HISAT2 for fast alignment, saved into multiple separate files.
 
 - **`SalmonIndex`**: Building decoy-aware transcriptome index for Salmon.
   - **`decoys.txt`**: List of decoy (non-coding or genomic) sequences included to reduce spurious mappings. It is a list of chromosome names，indicating the chromosomes whose sequences are added from `hg38.fa` into decoy.
