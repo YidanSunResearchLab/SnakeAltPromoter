@@ -1,4 +1,4 @@
-# SnakeAltPromoter: A Comprehensive Pipeline for Differential Alternative Promoter Analysis
+# SnakeAltPromoter Facilitates Differential Alternative Promoter Analysis
 
 **SnakeAltPromoter** is a Snakemake-based pipeline designed for end-to-end analysis of alternative promoter. It streamlines the processing of RNA-seq data by integrating **FastQC**, **TrimGlore**, **STAR** and **multiQC**, and supports multiple state-of-the-art promoter counting algorithms including **Proactiv**, **DEXseq** and **Salmon**. Finally it includes differential analysis using **DESeq2** and **Proactiv**. This pipeline offers researchers a reproducible, modular, and scalable solution for analyzing alternative promoter for RNA-seq data across diverse experimental designs.
 
@@ -58,6 +58,9 @@ For detailed usage, see:
 
 ## Contributing
 Feel free to open issues or submit pull requests on [GitHub](https://github.com/YidanSunResearchLab/SnakeAltPromoter).
+
+## Citation
+Please cite this paper: SnakeAltPromoter Facilitates Differential Alternative Promoter Analysis. [BioRxiv](https://www.biorxiv.org/content/10.1101/2025.08.16.669128v1).
 
 ## License
 See [LICENSE](LICENSE) for details.
