@@ -549,7 +549,7 @@ rule proactiv_promoter_plots:
         plots = proactiv_plot_outputs
     params:
         condition_compare = condition_compare_str,
-        condition = condition_compare_str,
+        condition = condition_str,
     log:
         "logs/proactiv_plots.log"
     benchmark:
@@ -587,7 +587,7 @@ rule proactiv_overall_plots:
     output:
         plots = proactiv_overall_plot_outputs
     params:
-        condition = condition_compare_str,
+        condition = condition_str,
         condition_compare = condition_compare_str,
     log:
         "logs/proactiv_plots_total.log"
@@ -851,7 +851,7 @@ rule dexseq_plots:
         plots = dexseq_plot_outputs
     params:
         condition_compare = condition_compare_str,
-        condition = condition_compare_str,
+        condition = condition_str,
     log:
         "logs/dexseq_plots.log"
     benchmark:
@@ -888,7 +888,7 @@ rule dexseq_overall_plots:
     output:
         plots = dexseq_overall_plot_outputs
     params:
-        condition = condition_compare_str,
+        condition = condition_str,
         condition_compare = condition_compare_str,
     log:
         "logs/dexseq_plots_total.log"
@@ -1129,7 +1129,7 @@ rule salmon_plots:
     output:
         plots = salmon_plot_outputs
     params:
-        condition = condition_compare_str,
+        condition = condition_str,
         condition_compare = condition_compare_str,
     log:
         "logs/salmon_plots.log"
@@ -1168,7 +1168,7 @@ rule salmon_overall_plots:
     output:
         plots = salmon_overall_plot_outputs
     params:
-        condition = condition_compare_str,
+        condition = condition_str,
         condition_compare = condition_compare_str,
     log:
         "logs/salmon_plots_total.log"
@@ -1424,7 +1424,7 @@ rule cage_plots_condition_wise:
     output:
         plots = cage_plot_outputs
     params:
-        condition = condition_compare_str,
+        condition = condition_str,
         condition_compare = condition_compare_str,
     log:
         "logs/cage_plots.log"
@@ -1464,7 +1464,7 @@ rule cage_overall_plots:
     output:
         plots = cage_overall_plot_outputs
     params:
-        condition = condition_compare_str,
+        condition = condition_str,
         condition_compare = condition_compare_str,
     log:
         "logs/cage_plots_total.log"
