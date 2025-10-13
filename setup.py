@@ -10,13 +10,21 @@ setup(
     author_email="syidan@wustl.edu",
     url="https://github.com/YidanSunResearchLab/SnakeAltPromoter",  # Updated username
     packages=find_packages(),  # Includes workflows/
+    python_requires=">=3.8",  # Bumped to 3.8 for modern support
     install_requires=[
         "snakemake>=8.28.0",  # Core dependency
     ],
-    python_requires=">=3.8",  # Bumped to 3.8 for modern support
+    extras_require={
+        "ui": [
+
+            'pyarrow==16.1.0',
+
+        ],
+    },
+
     package_data={
         "workflows": [
-            "../scripts/*", 
+            "../scripts/*",
             "../rules/*.Snakefile",       # Snakemake workflows
             "../rules/envs/*.yaml",       # Conda envs
             #"../organisms/*"              # Small organism files only
@@ -26,6 +34,8 @@ setup(
         "console_scripts": [
             "Genomesetup = workflows.Genomesetup:main",
             "Snakealtpromoter = workflows.Snakealtpromoter:main",
+            "sap=cli:main",
+            "sap-ui=app.launch:main",
         ]
     },
     classifiers=[

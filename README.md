@@ -17,6 +17,11 @@
   conda activate SnakeAltPromoter
   pip install .
   ```
+   - Install UI version:
+   ```bash
+   conda install -c conda-forge streamlit pyarrow pandas -y
+
+   ```
 
 3. **Verify Installation**:
    ```bash
@@ -49,6 +54,12 @@ Snakealtpromoter.py \
   --organism hg38 
   --control_condition Healthy 
   --test_condition Heart_Failure 
+```
+
+### 3. UI 
+Launch the UI for visualization:
+```bash
+sap-ui
 ```
 
 ## Documentation
