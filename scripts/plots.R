@@ -454,8 +454,7 @@ ggsave(p8, file = file.path(output_dir, "promoter_activity_number_hist_without1.
 
 message("Plots 6-8 completed. All figures generated successfully.")
 
-
-# Plot 9: t-SNE -----------------------------------
+## Plot 9: t-SNE -----------------------------------
 
 # A t-SNE plot visualizing promoter activity across all samples (every point is a sample).
 # X axis is tSNE1; y axis is tSNE2.
@@ -471,9 +470,6 @@ mat <- mat[rowSums(mat) > 0, ]
 # tsne expects one observation per row.
 tsne_df <- data.frame(t(mat))
 # Create a sample label vector (cell line name for each row/sample)
-#cond <- factor(rep(cell_lines, length.out = nrow(tsne_df)))
-# Create a sample label vector (cell line name for each row/sample)
-#cond <- factor(condition)
 condition <- make.names(condition) 
 cond <- factor(condition, levels = cell_lines)
 # Add a column for sample labels
@@ -481,29 +477,52 @@ tsne_df$Sample <- cond
 
 # Set random seed for reproducibility
 set.seed(40)
-# Run t-SNE on expression matrix, excluding the Sample column.
-#pca_res <- prcomp(tsne_df[ , !names(tsne_df) %in% "Sample"], scale.=TRUE)
-#Y <- Rtsne(pca_res$x[, 1:2], perplexity=1)$Y
 cat("Input matrix for t-SNE has", nrow(tsne_df), "samples (rows)\n")
 print(rownames(tsne_df))
 # Y is a 2D matrix with t-SNE coordinates for each sample
 Y <- Rtsne(as.matrix(tsne_df[ , !names(tsne_df) %in% "Sample"]), perplexity = 1)$Y
 rownames(Y) <- rownames(tsne_df)
 print(Y)
+
 # Define colors for each cell line and match by name.
 cell_cols <- setNames(c("#ff1e56", "#ffac41", "#323232")[seq_along(cell_lines)],
                       cell_lines)
 
 pdf(file.path(output_dir, "promoter_activity_tsne_plot.pdf"), width = 12/2.54, height = 10/2.54)
-# Allow drawing outside the plot region for legend.
 par(xpd = NA)
 # Set shape, filled color, border color, size, and aspect ratio for the t-SNE plot.
 # ,1 is tSNE1, x axis, the first dimension after dimentionally reduced to 2D.
 plot(Y[,1], Y[,2], pch = 24, bg = cell_cols[as.character(cond)], col = "black", cex = 1.4, asp = 1,
      xlab = "tSNE1", ylab = "tSNE2", main = "t-SNE plot (promoters active >=1 sample)")
+
+# >>> Added: label logic — if there is another sample to the RIGHT (nearby in Y), put label LEFT; otherwise RIGHT
+labs <- gsub("\\.SJ\\.out.*$", "", rownames(Y))  # strip ".SJ.out..." for labeling
+x <- Y[,1]; y <- Y[,2]
+
+lab_cex    <- 0.5          # label font size
+offset_ch  <- 0.40         # gap from point to label (in character widths)
+near_y_frac <- 0.03        # vertical neighborhood as a fraction of y-range (tune if needed)
+
+# metrics for label placement (not for collision here, just for offsets)
+char_w <- strwidth("M", cex = lab_cex)
+yr <- diff(range(y))
+near_y <- near_y_frac * yr
+
+chosen_pos <- integer(length(labs))
+for (i in seq_along(labs)) {
+  # find any other point to the RIGHT of x[i], and "near" in Y
+  has_right_neighbor <- any( (x[-i] > x[i]) & (abs(y[-i] - y[i]) <= near_y) )
+  chosen_pos[i] <- if (has_right_neighbor) 2 else 4   # 2=left, 4=right
+}
+
+# draw labels using chosen positions
+text(x, y, labels = labs, pos = chosen_pos, cex = lab_cex, offset = offset_ch)
+# >>> End added
+
+
 # legend matches point shape, filled colors, and border color of cell lines.
 legend("topright", title = "Cell Lines", legend = levels(cond), pch = 24,
-       pt.bg = cell_cols[levels(cond)], col = "black", bty = "n", cex = 0.9)
+       pt.bg = cell_cols[levels(cond)], col = "black", bty = "n", cex = 0.3)
 dev.off()
 
 message("t-SNE plot saved as promoter_activity_tsne_plot.pdf")

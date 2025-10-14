@@ -35,6 +35,7 @@ downsample_size = config.get("downsample_size", 0)
 trimmer_options = config.get("trimmer_options", "")
 star_options = config.get("star_options", "")
 test_condition = config.get("test_condition", "")
+batch = config.get("batch", "")
 control_condition = config.get("control_condition", "")
 max_gFC = config.get("max_gFC", 1.5)
 min_pFC = config.get("min_pFC", 2.0)
@@ -59,7 +60,7 @@ condition_compare_str = " ".join(condition_compare)
 print("condition_str =", condition_str)
 print("condition_compare_str =", condition_compare_str)
 
-batch = ["batch1"] * len(samples)
+# batch = ["batch1"] * len(samples)
 batch_str = ",".join(batch)
 
 # Paths from genomesetup.smk
@@ -183,6 +184,7 @@ rule all:
         expand(output_dir + "/fastqs/raw/{sample}/{sample}_{read}.fastq.gz", sample=samples, read=reads),
         expand(output_dir + "/fastqc/{sample}/{sample}_{read}_fastqc.html", sample=samples, read=reads),
         expand(output_dir + "/STAR/{sample}/{sample}.sorted.bam", sample=samples),
+        expand(output_dir + "/STAR/{sample}/{sample}.bw", sample=samples),
         input_all
 
 
@@ -384,6 +386,43 @@ rule star_paired:
             --outFileNamePrefix {params.prefix} \
         
          samtools sort -m {params.samsort_memory} -T {params.sample_dir}/{wildcards.sample} -@ {params.samtools_threads} -O bam -o {output.bam} {params.prefix}Aligned.out.bam > {log} 2>&1
+        """
+
+rule index_bam:
+    input:
+        bam = output_dir + "/STAR/{sample}/{sample}.sorted.bam"
+    output:
+        bai = output_dir + "/STAR/{sample}/{sample}.sorted.bam.bai"
+    conda: "envs/bam.yaml"
+    log:
+        "logs/index_bam.{sample}.log"
+    benchmark:
+        "benchmarks/index_bam.{sample}.txt"
+    threads: 4
+    shell:
+        """
+        samtools index {input.bam} 2> {log}
+        """
+
+rule bam_to_bigwig:
+    input:
+        bam = output_dir + "/STAR/{sample}/{sample}.sorted.bam",
+        bai = output_dir + "/STAR/{sample}/{sample}.sorted.bam.bai"
+    output:
+        bigwig = output_dir + "/STAR/{sample}/{sample}.bw"
+    params:
+        binsize = 50
+    conda: "envs/bam.yaml"
+    log:
+        "logs/bam_to_bigwig.{sample}.log"
+    benchmark:
+        "benchmarks/bam_to_bigwig.{sample}.txt"
+    threads: 8
+    shell:
+        """
+        bamCoverage -b {input.bam} -o {output.bigwig} \
+            --binSize {params.binsize} --normalizeUsing RPKM \
+            --numberOfProcessors {threads} 2> {log}
         """
 
 #############################################

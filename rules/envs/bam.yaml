@@ -1,0 +1,8 @@
+name: basic
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  #did not include python because it is easy in conflict
+  - samtools
+  - deeptools
