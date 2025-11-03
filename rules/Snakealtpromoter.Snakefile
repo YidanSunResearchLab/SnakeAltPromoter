@@ -7,7 +7,6 @@ print("METHOD = ", config.get("method", "not provided"))
 #############################################
 # Configuration
 #############################################
-pipeline = config["pipeline"]
 input_dir = config["input_dir"]
 output_dir = config["output_dir"]
 genome_dir = config["genome_dir"]
@@ -30,8 +29,10 @@ else:
     ruleorder: salmon_quant_single > salmon_quant_paired
 
 # General config
-threads = config.get("threads", 16)
+threads = config.get("threads", 16) / 10
 downsample_size = config.get("downsample_size", 0)
+fastqc = config.get("fastqc", False)
+trim = config.get("trim", False)
 trimmer_options = config.get("trimmer_options", "")
 star_options = config.get("star_options", "")
 test_condition = config.get("test_condition", "")
@@ -39,6 +40,7 @@ batch = config.get("batch", "")
 control_condition = config.get("control_condition", "")
 max_gFC = config.get("max_gFC", 1.5)
 min_pFC = config.get("min_pFC", 2.0)
+lfcshrink = config.get("lfcshrink", False)
 
 # Method selection
 method = config.get("method", "rnaseq").lower()
@@ -57,11 +59,37 @@ condition_compare = list(dict.fromkeys(sample_conditions))
 condition_str = ",".join(sample_conditions)
 condition_compare_str = " ".join(condition_compare)
 
+# --- NEW: single-condition toggle ---
+single_condition = (len(condition_compare) <= 1) or (test_condition == control_condition)
+do_diff = not single_condition  # run differential only when we truly have >=2 conditions
+print(f"single_condition={single_condition}; do_diff={do_diff}")
+
 print("condition_str =", condition_str)
 print("condition_compare_str =", condition_compare_str)
 
 # batch = ["batch1"] * len(samples)
 batch_str = ",".join(batch)
+
+def build_batch_condition(batch, samples=None):
+    if batch is None:
+        return ""
+    # Convert batch to a list of cleaned tokens
+    if isinstance(batch, str):
+        s = batch.strip()
+        if ",,," in s:
+            parts = re.split(r",{3,}", s)  # split by 3 or more commas
+            tokens = [p.replace(",", "").strip() for p in parts if p.strip()]
+        else:
+            tokens = [t.replace(",", "").strip() for t in re.split(r"[,\s]+", s) if t.strip()]
+    else:
+        # Already a list or tuple
+        tokens = [str(t).strip() for t in batch if str(t).strip()]
+    # Join all cleaned tokens into a single comma-separated string
+    return ",".join(tokens)
+
+batch_condition = build_batch_condition(batch, samples=samples)
+print(batch_condition)
+
 
 # Paths from genomesetup.smk
 star_index = f"{genome_dir}/organisms/{organism}/STARIndex"
@@ -70,6 +98,9 @@ genes_bed = f"{genome_dir}/organisms/{organism}/Annotation/genes.bed"
 dexseq_gff = f"{genome_dir}/organisms/{organism}/Annotation/DEXSeq_flattened_exons.gff"
 proactiv_rds = f"{genome_dir}/organisms/{organism}/Annotation/proActiv_promoter_annotation.rds"
 tx2gene = f"{genome_dir}/organisms/{organism}/Annotation/genes_t2g.tsv"
+
+# Path for sanity sanity_check
+SCRIPTS_DIR = os.path.realpath(os.path.join(workflow.basedir, "../scripts"))
 
 # Validate
 if not all([output_dir, organism, samples]):
@@ -100,8 +131,9 @@ if do_salmon:
     input_all.append(output_dir + "/salmon/counts_merged/merged_promoter_counts.rds")
     input_all.append(output_dir + "/salmon/promoter_classification_condition_wise/Promoter_activity_SE.rds")
     input_all.append(output_dir + "/salmon/promoter_classification_total/Promoter_activity_SE.rds")
-    input_all.append(output_dir + "/salmon/differential/Differential_promoter_usage_pFC2_gFC1_5.rds")
-    input_all.append(output_dir + "/salmon/differential/Promoter_differential_activity_FDR0_05.rds")
+    if do_diff:
+        input_all.append(output_dir + "/salmon/differential/Differential_promoter_usage_pFC2_gFC1_5.rds")
+        input_all.append(output_dir + "/salmon/differential/Promoter_differential_activity_FDR0_05.rds")
     input_all += expand(output_dir + "/salmon/plots_condition_wise/promoter_activity_{plot}.pdf", 
                         plot=["number_hist_all", "number_hist_without1", "tsne_plot"])
     input_all += expand(output_dir + "/salmon/plots_condition_wise/{condition}/{condition}_promoter_activity_{plot}.pdf", 
@@ -112,7 +144,7 @@ if do_salmon:
                         plot=[
                             "category_percentage", "category_comparison", "position_category",
                             "geneexpression_correlation", "category_percentage_genewise",
-                            "single_multiple_category", "number_hist_all", "number_hist_without1", "tsne_plot"
+                            "single_multiple_category", "number_hist_all", "number_hist_without1"
                         ])
 
 
@@ -120,8 +152,9 @@ if do_proactiv:
     input_all.append(output_dir + "/proactiv/counts_merged/proactiv_raw_counts.rds")
     input_all.append(output_dir + "/proactiv/promoter_classification_condition_wise/Promoter_activity_SE.rds")
     input_all.append(output_dir + "/proactiv/promoter_classification_total/Promoter_activity_SE.rds")
-    input_all.append(output_dir + "/proactiv/differential/Differential_promoter_usage_pFC2_gFC1_5.rds")
-    input_all.append(output_dir + "/proactiv/differential/Promoter_differential_activity_FDR0_05.rds")
+    if do_diff:
+        input_all.append(output_dir + "/proactiv/differential/Differential_promoter_usage_pFC2_gFC1_5.rds")
+        input_all.append(output_dir + "/proactiv/differential/Promoter_differential_activity_FDR0_05.rds")
     input_all += expand(output_dir + "/proactiv/plots_condition_wise/promoter_activity_{plot}.pdf", 
                         plot=["number_hist_all", "number_hist_without1", "tsne_plot"])
     input_all += expand(output_dir + "/proactiv/plots_condition_wise/{condition}/{condition}_promoter_activity_{plot}.pdf", 
@@ -132,7 +165,7 @@ if do_proactiv:
                         plot=[
                             "category_percentage", "category_comparison", "position_category",
                             "geneexpression_correlation", "category_percentage_genewise",
-                            "single_multiple_category", "number_hist_all", "number_hist_without1", "tsne_plot"
+                            "single_multiple_category", "number_hist_all", "number_hist_without1"
                         ])
 
 
@@ -143,8 +176,9 @@ if do_dexseq:
     input_all.append(output_dir + "/dexseq/counts_merged/merged_promoter_counts.rds")
     input_all.append(output_dir + "/dexseq/promoter_classification_condition_wise/Promoter_activity_SE.rds")
     input_all.append(output_dir + "/dexseq/promoter_classification_total/Promoter_activity_SE.rds")
-    input_all.append(output_dir + "/dexseq/differential/Differential_promoter_usage_pFC2_gFC1_5.rds")
-    input_all.append(output_dir + "/dexseq/differential/Promoter_differential_activity_FDR0_05.rds")
+    if do_diff:
+        input_all.append(output_dir + "/dexseq/differential/Differential_promoter_usage_pFC2_gFC1_5.rds")
+        input_all.append(output_dir + "/dexseq/differential/Promoter_differential_activity_FDR0_05.rds")
     input_all += expand(output_dir + "/dexseq/plots_condition_wise/promoter_activity_{plot}.pdf", 
                         plot=["number_hist_all", "number_hist_without1", "tsne_plot"])
     input_all += expand(output_dir + "/dexseq/plots_condition_wise/{condition}/{condition}_promoter_activity_{plot}.pdf", 
@@ -155,8 +189,9 @@ if do_dexseq:
                         plot=[
                             "category_percentage", "category_comparison", "position_category",
                             "geneexpression_correlation", "category_percentage_genewise",
-                            "single_multiple_category", "number_hist_all", "number_hist_without1", "tsne_plot"
+                            "single_multiple_category", "number_hist_all", "number_hist_without1"
                         ])
+
 
 
 if do_cage:
@@ -164,8 +199,9 @@ if do_cage:
     input_all.append(output_dir + "/cage/counts_merged/cage_counts.rds")
     input_all.append(output_dir + "/cage/promoter_classification_condition_wise/Promoter_activity_SE.rds")
     input_all.append(output_dir + "/cage/promoter_classification_total/Promoter_activity_SE.rds")
-    input_all.append(output_dir + "/cage/differential/Differential_promoter_usage_pFC2_gFC1_5.rds")
-    input_all.append(output_dir + "/cage/differential/Promoter_differential_activity_FDR0_05.rds")
+    if do_diff:
+        input_all.append(output_dir + "/cage/differential/Differential_promoter_usage_pFC2_gFC1_5.rds")
+        input_all.append(output_dir + "/cage/differential/Promoter_differential_activity_FDR0_05.rds")
     input_all += expand(output_dir + "/cage/plots_condition_wise/{condition}/{condition}_promoter_activity_{plot}.pdf", 
                         condition=condition_compare, 
                         plot=["category_comparison", "geneexpression_correlation", "position_category", 
@@ -174,17 +210,17 @@ if do_cage:
                         plot=[
                             "category_percentage", "category_comparison", "position_category",
                             "geneexpression_correlation", "category_percentage_genewise",
-                            "single_multiple_category", "number_hist_all", "number_hist_without1", "tsne_plot"
+                            "single_multiple_category", "number_hist_all", "number_hist_without1"
                         ])
+
 
 input_all.append(output_dir + "/multiqc/multiqc_report.html")
 
 rule all:
     input:
         expand(output_dir + "/fastqs/raw/{sample}/{sample}_{read}.fastq.gz", sample=samples, read=reads),
-        expand(output_dir + "/fastqc/{sample}/{sample}_{read}_fastqc.html", sample=samples, read=reads),
         expand(output_dir + "/STAR/{sample}/{sample}.sorted.bam", sample=samples),
-        expand(output_dir + "/STAR/{sample}/{sample}.bw", sample=samples),
+        expand(output_dir + "/bigwig/{sample}.bw", sample=samples),
         input_all
 
 
@@ -218,6 +254,7 @@ rule fastqc:
         zip=output_dir + "/fastqc/{sample}/{sample}_{read}_fastqc.zip"
     log:
         "logs/fastqc.{sample}_{read}.log"
+    threads: threads
     benchmark:
         "benchmarks/fastqc.{sample}_{read}.txt"
     conda: "envs/altbasic.yaml"
@@ -225,7 +262,7 @@ rule fastqc:
         """
         mkdir -p {output_dir}/fastqc/{wildcards.sample}
         base=$(basename {input.fastq} .fastq.gz)
-        fastqc -o {output_dir}/fastqc {input.fastq} > {log} 2>&1
+        fastqc -t {threads} -o {output_dir}/fastqc {input.fastq} > {log} 2>&1
         mv {output_dir}/fastqc/${{base}}_fastqc.html {output.html}
         mv {output_dir}/fastqc/${{base}}_fastqc.zip {output.zip}
         """
@@ -270,7 +307,7 @@ rule trim_galore_single:
     conda: "envs/altbasic.yaml"
     shell:
         """
-        trim_galore --stringency 3 {params.opts} \
+        trim_galore --stringency 3 --cores {threads} {params.opts} \
             --output_dir {params.outdir} --gzip \
             --fastqc --fastqc_args "-o {params.outdir}" \
             {input.r1} > {log} 2>&1
@@ -301,7 +338,7 @@ rule trim_galore_paired:
         """
         mkdir -p $(dirname {output.r1}) $(dirname {output.r2})
 
-        trim_galore --paired --stringency 3 {params.opts} \
+        trim_galore --paired --stringency 3 --cores {threads} {params.opts} \
             --output_dir {params.outdir} --gzip \
             --fastqc --fastqc_args "-o {params.outdir}" \
             {input.r1} {input.r2} > {log} 2>&1
@@ -313,7 +350,11 @@ rule trim_galore_paired:
 
 rule star_single:
     input:
-        r1=output_dir + "/fastqs/trimmed/{sample}/{sample}_R1.fastq.gz",
+        r1 = lambda wildcards: (
+            output_dir + f"/fastqs/trimmed/{wildcards.sample}/{wildcards.sample}_R1.fastq.gz"
+            if trim
+            else output_dir + f"/fastqs/downsampled/{wildcards.sample}/{wildcards.sample}_R1.fastq.gz"
+        ),
         index=star_index,
         gtf=genes_gtf
     output:
@@ -351,8 +392,16 @@ rule star_single:
 
 rule star_paired:
     input:
-        r1=output_dir + "/fastqs/trimmed/{sample}/{sample}_R1.fastq.gz",
-        r2=output_dir + "/fastqs/trimmed/{sample}/{sample}_R2.fastq.gz",
+        r1 = lambda wildcards: (
+            output_dir + f"/fastqs/trimmed/{wildcards.sample}/{wildcards.sample}_R1.fastq.gz"
+            if trim
+            else output_dir + f"/fastqs/downsampled/{wildcards.sample}/{wildcards.sample}_R1.fastq.gz"
+        ),
+        r2 = lambda wildcards: (
+            output_dir + f"/fastqs/trimmed/{wildcards.sample}/{wildcards.sample}_R2.fastq.gz"
+            if trim
+            else output_dir + f"/fastqs/downsampled/{wildcards.sample}/{wildcards.sample}_R2.fastq.gz"
+        ),
         index=star_index,
         gtf=genes_gtf
     output:
@@ -401,7 +450,7 @@ rule index_bam:
     threads: 4
     shell:
         """
-        samtools index {input.bam} 2> {log}
+        samtools index -@ {threads} {input.bam} 2> {log}
         """
 
 rule bam_to_bigwig:
@@ -409,7 +458,7 @@ rule bam_to_bigwig:
         bam = output_dir + "/STAR/{sample}/{sample}.sorted.bam",
         bai = output_dir + "/STAR/{sample}/{sample}.sorted.bam.bai"
     output:
-        bigwig = output_dir + "/STAR/{sample}/{sample}.bw"
+        bigwig = output_dir + "/bigwig/{sample}.bw"
     params:
         binsize = 50
     conda: "envs/bam.yaml"
@@ -417,7 +466,7 @@ rule bam_to_bigwig:
         "logs/bam_to_bigwig.{sample}.log"
     benchmark:
         "benchmarks/bam_to_bigwig.{sample}.txt"
-    threads: 8
+    threads: threads
     shell:
         """
         bamCoverage -b {input.bam} -o {output.bigwig} \
@@ -439,7 +488,7 @@ rule proactiv_count:
         condition = condition_str,
         test_condition = test_condition,
         batch = batch_str,
-        fit_script="../scripts/sanity_check.R",
+        fit_script = os.path.join(SCRIPTS_DIR, "sanity_check.R"),
         sj_files_str = " ".join([f"{output_dir}/STAR/junctions/{s}.SJ.out.tab" for s in samples])
     log:
         "logs/proactiv_counts.log"
@@ -472,7 +521,7 @@ rule proactiv_promoter_classification_total:
         newnames=" ".join(samples),
         condition = condition_str,
         condition_compare = condition_compare_str,
-        fit_script="../scripts/sanity_check.R",
+        fit_script = os.path.join(SCRIPTS_DIR, "sanity_check.R"),
         batch=batch_str,
         norm_method=config.get("norm_method", "deseq2")
 
@@ -508,7 +557,7 @@ rule proactiv_promoter_classification:
         condition = condition_str,
         condition_compare = condition_compare_str,
         batch = batch_str,
-        fit_script="../scripts/sanity_check.R",
+        fit_script = os.path.join(SCRIPTS_DIR, "sanity_check.R"),
         norm_method=config.get("norm_method", "deseq2")
     log:
         "logs/proactiv_promoter_classification_condition_wise.log"
@@ -547,6 +596,8 @@ rule proactiv_differential:
         reference    = test_condition,
         min_promoter_fold_change = min_pFC,
         max_gene_fold_change = max_gFC,
+        lfcshrink = lfcshrink,
+        batch = batch_condition,
     log:
         "logs/proactiv_promoter_differential.log"
     benchmark:
@@ -564,7 +615,7 @@ rule proactiv_differential:
             {params.baseline} \
             {params.reference} \
             {params.min_promoter_fold_change} \
-            {params.max_gene_fold_change} > {log} 2>&1 
+            {params.max_gene_fold_change} {params.lfcshrink} {params.batch} > {log} 2>&1 
         """
 
 
@@ -608,13 +659,23 @@ rule proactiv_promoter_plots:
         """
 
 
-proactiv_overall_plot_outputs = [
+prev_proactiv_overall_plot_outputs = [
     f"{output_dir}/proactiv/plots_total/overall/overall_promoter_activity_{plot}.pdf"
     for plot in [
         "category_percentage", "category_comparison", "position_category",
         "geneexpression_correlation", "category_percentage_genewise",
         "single_multiple_category",  # Plot 1–6
         "number_hist_all", "number_hist_without1", "tsne_plot"  # Plot 7–9
+    ]
+]
+
+proactiv_overall_plot_outputs = [
+    f"{output_dir}/proactiv/plots_total/overall/overall_promoter_activity_{plot}.pdf"
+    for plot in [
+        "category_percentage", "category_comparison", "position_category",
+        "geneexpression_correlation", "category_percentage_genewise",
+        "single_multiple_category",  # Plot 1–6
+        "number_hist_all", "number_hist_without1"  # Plot 7–9
     ]
 ]
 
@@ -777,7 +838,7 @@ rule dexseq_promoter_classification_total:
         newnames=" ".join(samples),
         condition = condition_str,
         condition_compare = condition_compare_str,
-        fit_script="../scripts/sanity_check.R",
+        fit_script = os.path.join(SCRIPTS_DIR, "sanity_check.R"),
         batch=batch_str,
         norm_method=config.get("norm_method", "deseq2")
 
@@ -800,7 +861,7 @@ rule dexseq_promoter_classification_total:
             "{params.norm_method}" > {log} 2>&1
         """
 
-rule dexseq_promoter_promoter_classification:
+rule dexseq_promoter_classification:
     input:
         combined=output_dir + "/dexseq/counts_merged/merged_promoter_counts.rds",
         promoter_rds=proactiv_rds
@@ -814,7 +875,7 @@ rule dexseq_promoter_promoter_classification:
         condition_compare = condition_compare_str,
         newnames=samples,
         batch_unsorted = batch_str,
-        fit_script="../scripts/sanity_check.R",
+        fit_script = os.path.join(SCRIPTS_DIR, "sanity_check.R"),
         test_condition = test_condition,
         norm_method=config.get("norm_method", "deseq2")
         #norm_method="edger"
@@ -852,6 +913,8 @@ rule dexseq_differential:
         reference    = test_condition,
         min_promoter_fold_change = min_pFC,
         max_gene_fold_change = max_gFC,
+        lfcshrink = lfcshrink,
+        batch = batch_condition,
     log:
         "logs/dexseq_promoter_differential.log"
     benchmark:
@@ -869,7 +932,7 @@ rule dexseq_differential:
             {params.baseline} \
             {params.reference} \
             {params.min_promoter_fold_change} \
-            {params.max_gene_fold_change} > {log} 2>&1 
+            {params.max_gene_fold_change} {params.lfcshrink} {params.batch} > {log} 2>&1 
         """
 
 
@@ -909,13 +972,23 @@ rule dexseq_plots:
             "{params.condition}" > {log} 2>&1
         """
 
-dexseq_overall_plot_outputs = [
+prev_dexseq_overall_plot_outputs = [
     f"{output_dir}/dexseq/plots_total/overall/overall_promoter_activity_{plot}.pdf"
     for plot in [
         "category_percentage", "category_comparison", "position_category",
         "geneexpression_correlation", "category_percentage_genewise",
         "single_multiple_category",  # Plot 1–6
         "number_hist_all", "number_hist_without1", "tsne_plot"  # Plot 7–9
+    ]
+]
+
+dexseq_overall_plot_outputs = [
+    f"{output_dir}/dexseq/plots_total/overall/overall_promoter_activity_{plot}.pdf"
+    for plot in [
+        "category_percentage", "category_comparison", "position_category",
+        "geneexpression_correlation", "category_percentage_genewise",
+        "single_multiple_category",  # Plot 1–6
+        "number_hist_all", "number_hist_without1"  # Plot 7–9
     ]
 ]
 
@@ -952,7 +1025,11 @@ rule dexseq_overall_plots:
 #############################################
 rule salmon_quant_single:
     input:
-        r1=output_dir + "/fastqs/trimmed/{sample}/{sample}_R1.fastq.gz"
+        r1=lambda wildcards: (
+            output_dir + f"/fastqs/trimmed/{wildcards.sample}/{wildcards.sample}_R1.fastq.gz"
+            if trim
+            else output_dir + f"/fastqs/downsampled/{wildcards.sample}/{wildcards.sample}_R1.fastq.gz"
+        )
     output:
         quant=output_dir + "/salmon/counts_separate/{sample}/quant.sf"
     params:
@@ -974,8 +1051,16 @@ rule salmon_quant_single:
 
 rule salmon_quant_paired:
     input:
-        r1=output_dir + "/fastqs/trimmed/{sample}/{sample}_R1.fastq.gz",
-        r2=output_dir + "/fastqs/trimmed/{sample}/{sample}_R2.fastq.gz",
+        r1=lambda wildcards: (
+            output_dir + f"/fastqs/trimmed/{wildcards.sample}/{wildcards.sample}_R1.fastq.gz"
+            if trim
+            else output_dir + f"/fastqs/downsampled/{wildcards.sample}/{wildcards.sample}_R1.fastq.gz"
+        ),
+        r2=lambda wildcards: (
+            output_dir + f"/fastqs/trimmed/{wildcards.sample}/{wildcards.sample}_R2.fastq.gz"
+            if trim
+            else output_dir + f"/fastqs/downsampled/{wildcards.sample}/{wildcards.sample}_R2.fastq.gz"
+        )
     output:
         quant=output_dir + "/salmon/counts_separate/{sample}/quant.sf"
     params:
@@ -1054,7 +1139,7 @@ rule salmon_promoter_classification_total:
         newnames=" ".join(samples),
         condition = condition_str,
         condition_compare = condition_compare_str,
-        fit_script="../scripts/sanity_check.R",
+        fit_script = os.path.join(SCRIPTS_DIR, "sanity_check.R"),
         batch=batch_str,
         norm_method=config.get("norm_method", "deseq2")
 
@@ -1092,7 +1177,7 @@ rule salmon_promoter_classification:
         condition_compare = condition_compare_str,
         newnames=samples,
         batch_unsorted = batch_str,
-        fit_script="../scripts/sanity_check.R",
+        fit_script = os.path.join(SCRIPTS_DIR, "sanity_check.R"),
         test_condition = test_condition,
         norm_method=config.get("norm_method", "deseq2")
         #norm_method="edger"
@@ -1130,6 +1215,8 @@ rule salmon_differential:
         reference    = test_condition,
         min_promoter_fold_change = min_pFC,
         max_gene_fold_change = max_gFC,
+        lfcshrink = lfcshrink,
+        batch = batch_condition,
     log:
         "logs/salmon_promoter_differential.log"
     benchmark:
@@ -1147,7 +1234,7 @@ rule salmon_differential:
             {params.baseline} \
             {params.reference} \
             {params.min_promoter_fold_change} \
-            {params.max_gene_fold_change} > {log} 2>&1 
+            {params.max_gene_fold_change} {params.lfcshrink} {params.batch} > {log} 2>&1 
         """
 
 
@@ -1189,13 +1276,23 @@ rule salmon_plots:
         """
 
 
-salmon_overall_plot_outputs = [
+prev_salmon_overall_plot_outputs = [
     f"{output_dir}/salmon/plots_total/overall/overall_promoter_activity_{plot}.pdf"
     for plot in [
         "category_percentage", "category_comparison", "position_category",
         "geneexpression_correlation", "category_percentage_genewise",
         "single_multiple_category",  # Plot 1–6
         "number_hist_all", "number_hist_without1", "tsne_plot"  # Plot 7–9
+    ]
+]
+
+salmon_overall_plot_outputs = [
+    f"{output_dir}/salmon/plots_total/overall/overall_promoter_activity_{plot}.pdf"
+    for plot in [
+        "category_percentage", "category_comparison", "position_category",
+        "geneexpression_correlation", "category_percentage_genewise",
+        "single_multiple_category",  # Plot 1–6
+        "number_hist_all", "number_hist_without1"  # Plot 7–9
     ]
 ]
 
@@ -1309,17 +1406,18 @@ rule cage_featurecounts:
         """
 
 rule cage_counts:
+    input:
+        promoter_rds = proactiv_rds,
+        counts_txt = expand(output_dir + "/cage/counts_separate/{sample}_promoter_counts.txt", sample=samples)
     output:
         counts = output_dir + "/cage/counts_merged/cage_counts.rds"
-    input:
-        promoter_rds = proactiv_rds
     params:
         fc_dir = output_dir + "/cage/counts_separate",
         samples = " ".join(samples),
         newnames = " ".join(samples),
         condition = condition_str,
         condition_compare = condition_compare_str,
-        fit_script = "../scripts/sanity_check.R",
+        fit_script = os.path.join(SCRIPTS_DIR, "sanity_check.R"),
         batch = batch_str
     log:
         "logs/cage_counts.log"
@@ -1349,7 +1447,7 @@ rule cage_promoter_classification_total:
         newnames=" ".join(samples),
         condition = condition_str,
         condition_compare = condition_compare_str,
-        fit_script="../scripts/sanity_check.R",
+        fit_script = os.path.join(SCRIPTS_DIR, "sanity_check.R"),
         batch=batch_str,
         norm_method=config.get("norm_method", "deseq2")
 
@@ -1386,7 +1484,7 @@ rule cage_promoter_classification:
         newnames=" ".join(samples),
         condition = condition_str,
         condition_compare = condition_compare_str,
-        fit_script="../scripts/sanity_check.R",
+        fit_script = os.path.join(SCRIPTS_DIR, "sanity_check.R"),
         batch=batch_str,
         norm_method=config.get("norm_method", "deseq2")
 
@@ -1425,6 +1523,8 @@ rule cage_differential:
         reference    = test_condition,
         min_promoter_fold_change = min_pFC,
         max_gene_fold_change = max_gFC,
+        lfcshrink = lfcshrink,
+        batch = batch_condition,
     log:
         "logs/cage_promoter_differential.log"
     benchmark:
@@ -1442,7 +1542,7 @@ rule cage_differential:
             {params.baseline} \
             {params.reference} \
             {params.min_promoter_fold_change} \
-            {params.max_gene_fold_change} > {log} 2>&1 
+            {params.max_gene_fold_change} {params.lfcshrink} {params.batch} > {log} 2>&1 
         """
 
 
@@ -1484,7 +1584,7 @@ rule cage_plots_condition_wise:
         """
 
 
-cage_overall_plot_outputs = [
+prev_cage_overall_plot_outputs = [
     f"{output_dir}/cage/plots_total/overall/overall_promoter_activity_{plot}.pdf"
     for plot in [
         "category_percentage", "category_comparison", "position_category",
@@ -1494,6 +1594,15 @@ cage_overall_plot_outputs = [
     ]
 ]
 
+cage_overall_plot_outputs = [
+    f"{output_dir}/cage/plots_total/overall/overall_promoter_activity_{plot}.pdf"
+    for plot in [
+        "category_percentage", "category_comparison", "position_category",
+        "geneexpression_correlation", "category_percentage_genewise",
+        "single_multiple_category",  # Plot 1–6
+        "number_hist_all", "number_hist_without1"  # Plot 7–9
+    ]
+]
 
 rule cage_overall_plots:
     input:
@@ -1528,17 +1637,15 @@ rule cage_overall_plots:
 #############################################
 rule multiqc:
     input:
-        fastqc=expand(output_dir + "/fastqc/{sample}/{sample}_{read}_fastqc.zip", sample=samples, read=reads),
-        trim_galore=expand("logs/trim_galore.{sample}.log", sample=samples),
-        star=expand("logs/star.{sample}.log", sample=samples),
-        salmon=expand("logs/salmon_quant.{sample}.log", sample=samples) if do_salmon else [],
-        featurecounts=expand("logs/dexseq_featurecounts.{sample}.log", sample=samples) if do_dexseq else [],
-        cage=expand("logs/counts_separate/{sample}.log", sample=samples) if do_cage else []
+        *(salmon_overall_plot_outputs if do_salmon else []),
+        *(proactiv_overall_plot_outputs if do_proactiv else []),
+        *(dexseq_overall_plot_outputs if do_dexseq else []),
+        *(cage_overall_plot_outputs if do_cage else []),
     output:
         report=output_dir + "/multiqc/multiqc_report.html"
     params:
         outdir=output_dir + "/multiqc",
-        logdirs=[output_dir + "/fastqc", "logs"]
+        logdirs=[output_dir],
     log:
         "logs/multiqc.log"
     benchmark:
@@ -1547,5 +1654,5 @@ rule multiqc:
     shell:
         """
         mkdir -p {params.outdir}
-        multiqc {params.logdirs} -o {params.outdir} --filename multiqc_report.html > {log} 2>&1
+        multiqc {params.logdirs} -o {params.outdir} --filename multiqc_report --force > {log} 2>&1
         """

@@ -31,10 +31,16 @@ baseline_condition <- args[7]  # Baseline condition for comparison
 comparison_condition <- args[8]
 pFC_raw <- args[9]
 gFC_raw <- args[10]
+lfcshrink <- as.logical(args[11])
+batch_str <- args[12]
+
 
 cond <- strsplit(conditions_str, ",")[[1]]
-#cond <- strsplit("Heart_Failure,Heart_Failure,Heart_Failure,Heart_Failure,Healthy,Healthy,Healthy",",")[[1]]
 head(cond)
+
+batch <- strsplit(batch_str, ",")[[1]]
+batch <- factor(batch)
+print(batch)
 
 stopifnot(file.exists(se_file),
           file.exists(prom_rds),
@@ -65,14 +71,28 @@ print("==== Check condition factor ====")
 print(condition)
 print("==== Check colData ====")
 print(colData)
-dds <- DESeqDataSetFromMatrix(countData = round(cnt_mat),
+if (length(unique(batch)) == 1) {
+  print("Differential analysis without batch effect correction.")
+  dds <- DESeqDataSetFromMatrix(countData = round(cnt_mat),
                               colData   = data.frame(condition = condition),
                               design    = ~ condition)
+} else {
+  print("Differential analysis with batch effect correction.")
+  dds <- DESeqDataSetFromMatrix(countData = round(cnt_mat),
+                              colData   = data.frame(condition = condition, batch = batch),
+                              design    = ~ condition + batch)
+  }
 
 dds <- DESeq(dds)
 # Result is HF vs Healthy, >0 means HF upreg
 res <- results(dds, contrast = c("condition",comparison_condition,baseline_condition))
 head(res)
+# shrink LFC using the normal method
+if (lfcshrink){
+  print("Using lfcShrink to shrink log2 fold changes.")
+  resLFC <- lfcShrink(dds,coef = paste0("condition_", comparison_condition, "_vs_", baseline_condition),type = "normal")
+  res <- resLFC
+}
 # Convert to dataframe to adjust rows and columes
 act_tab <- as.data.frame(res)
 act_tab$promoterId <- rownames(act_tab)

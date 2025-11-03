@@ -12,15 +12,15 @@ Snakealtpromoter [options]
 
 ### Required Arguments
 - `-i/--input_dir`: Directory containing FASTQ gz files.
+- `--sample_sheet`: Path to sample sheet.
 - `-o/--output_dir`: Output directory.
 - `--organism`: Genome assembly, the same as Genomesetup step (e.g., `hg38`).
 - `--genome_dir`: Directory from Genomesetup step (e.g., `/abs/path/to/genome`).
 
+
 ### Optional Arguments
 - `--downsample_size`: Number of valid pairs to downsample to (e.g., 50000000). Set to 0 to disable (default: 0).
 - `--threads`: Number of CPU threads for parallel processing (e.g., 100). Default: 30.
-- `--test_condition`: Sample name for reference condition in differential analysis (e.g., SampleA). Default: NA (none).
-- `--control_condition`: Baseline condition in differential analysis (e.g., --control_condition 'Healthy'). Default: NA.
 - `--method`: Method to be used for differential analysis in Maps pipeline. Options are proactiv, salmon, dexseq, all. Default: all (all three methods).
 - `--reads`: Reads are single-ended or paired: single / paired.
 - `--min_pFC`: Additional threshold of minimum fold change of promoter activity for a promoter to be considered alternative promoter (default 2.0). 
@@ -29,15 +29,34 @@ Snakealtpromoter [options]
 
 ### Example
 ```bash
-Snakealtpromoter.py \
+Snakealtpromoter \
 -i /path/to/input/fastqs/dir/ 
+--sample_sheet /path/to/sample/sheet
 --genome_dir /path/to/genomesetup/dir/ 
 -o /path/to/output/dir/ 
 --threads 30 
 --organism hg38 
---control_condition Healthy 
---test_condition Heart_Failure 
 ```
+
+### Sample Sheet
+- Sample sheet contains information corresponding each fastq file to its condition and batch.
+- `sampleName` is the name of fastq file with _R1/_R2.fastq.gz removed.
+- `condition` is the biological condition of each sample, which contains `control_condition` and `test_condition` if specified.
+- `batch` is the batch number of each sample. It is used for batch correction in sanity check. It is written as batchn, where n is the number of the batch.
+- `differential` is the condition used to compare during the differential analysis. It is either `test` or `control`. `test` : Sample name for reference condition in differential analysis (e.g., SampleA).  `control`: Baseline condition in differential analysis (e.g., --control_condition 'Healthy').
+
+
+## Template
+sampleName    condition    batch  differential
+
+## Example of a sample sheet for test data
+sampleName	condition	batch	differential
+Human_GSM4421328_Human_Left_Ventrice_Tissue_Healthy_cDNA_PAIRED_SRR11351704	Healthy	batch1	control
+Human_GSM4421329_Human_Left_Ventrice_Tissue_Healthy_cDNA_PAIRED_SRR11351705	Healthy	batch1	control
+Human_GSM4421331_Human_Left_Ventrice_Tissue_Heart_Failure_cDNA_PAIRED_SRR11351707	Failure	batch1	test
+Human_GSM4421332_Human_Left_Ventrice_Tissue_Heart_Failure_cDNA_PAIRED_SRR11351708	Failure	batch1	test
+
+
 
 ## Snakealtpromoter Output
 ```
@@ -248,7 +267,6 @@ Snakealtpromoter/
 - **`counts`** - Counts promoter reads according to quasi-mapping and promoterId to transcript mapping (e.g., {sample}_promoter_counts.rds).
 - **`merge`** - Result file types are the same as [See Merge](#DEXSeq_merge).
 - **`plots`** - Plots are the same as [See Plots](#proActiv_plots).
-
 
 ## Notes
 - FASTQ Naming: Files should be named {sample}_R1.fastq.gz and {sample}_R2.fastq.gz.

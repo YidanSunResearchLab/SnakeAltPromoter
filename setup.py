@@ -1,10 +1,9 @@
-
 # setup.py
 from setuptools import setup, find_packages
 
 setup(
     name="SnakeAltPromoter",
-    version="0.1.0",
+    version="1.0.0",
     description="A Snakemake pipeline for alternative promoter analysis",
     author="Yidan Sun",
     author_email="syidan@wustl.edu",
@@ -13,17 +12,14 @@ setup(
     python_requires=">=3.8",  # Bumped to 3.8 for modern support
     install_requires=[
         "snakemake>=8.28.0",  # Core dependency
+        "streamlit",          # UI dependencies now default
+        "pyarrow",
+        "pandas",
     ],
-    extras_require={
-        "ui": [
-
-            'pyarrow==16.1.0',
-
-        ],
-    },
 
     package_data={
         "workflows": [
+            "ui/*.py",
             "../scripts/*",
             "../rules/*.Snakefile",       # Snakemake workflows
             "../rules/envs/*.yaml",       # Conda envs
@@ -35,7 +31,7 @@ setup(
             "Genomesetup = workflows.Genomesetup:main",
             "Snakealtpromoter = workflows.Snakealtpromoter:main",
             "sap=cli:main",
-            "sap-ui=app.launch:main",
+            "sap-ui=ui.launch:main",
         ]
     },
     classifiers=[

@@ -9,7 +9,7 @@ st.caption(
     "UI interface for genome setup and main pipeline. "
 )
 
-tab1, tab2 = st.tabs(["Genome setup (Genomesetup)", "Main pipeline (Snakealtpromoter.py)"])
+tab1, tab2 = st.tabs(["Genome setup (Genomesetup)", "Main pipeline (Snakealtpromoter)"])
 
 def run_and_stream(cmd_list):
     st.write("**Command to run:**")
@@ -52,14 +52,14 @@ with tab1:
         run_and_stream(cmd)
 
 with tab2:
-    st.subheader("Snakealtpromoter.py — main RNA-seq pipeline")
+    st.subheader("Snakealtpromoter — main RNA-seq pipeline")
     input_dir = st.text_input("-i Input FASTQ directory", value="/path/to/input/fastqs/dir/")
     genome_dir = st.text_input("--genome_dir (output from the previous step)", value="/path/to/genomesetup/dir/")
     out_dir2 = st.text_input("-o Output directory", value="/path/to/output/dir/")
     threads2 = st.number_input("--threads", min_value=1, max_value=128, value=30)
     organism2 = st.text_input("--organism", value="hg38")
-    ctrl = st.text_input("--control_condition", value="Healthy")
-    case = st.text_input("--test_condition", value="Heart_Failure")
+    sample_sheet = st.text_input("--sample_sheet", value="data/samplesheet/Heart.tsv ")
+
 
     extra = st.text_input(
         "Optional: extra advanced args to pass through verbatim",
@@ -67,14 +67,12 @@ with tab2:
     )
     if st.button("Run pipeline", type="primary"):
         cmd = [
-            "Snakealtpromoter.py",
+            "Snakealtpromoter",
             "-i", input_dir,
             "--genome_dir", genome_dir,
             "-o", out_dir2,
             "--threads", str(threads2),
             "--organism", organism2,
-            "--control_condition", ctrl,
-            "--test_condition", case,
         ]
         if extra.strip():
             cmd += shlex.split(extra)

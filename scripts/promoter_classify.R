@@ -403,6 +403,8 @@ for (i in seq_along(cond_class_cols)) {
 # Call dexseq_fit2.R and pass arguments
 # -------------------------
 
+message("getwd() = ", getwd())
+message("fit_script = ", fit_script, " ; exists = ", file.exists(fit_script))
 
 system2("Rscript", args = c(
     fit_script, 

@@ -1,0 +1,62 @@
+\documentclass[12pt]{article}
+\usepackage{fontspec}
+ 
+\setmainfont{Arial}
+\title{Sample font document}
+\author{Overleaf}
+\date{\today}
+   
+
+\documentclass[a4paper,12pt]{article}
+
+\usepackage[margin=0.5cm]{geometry}
+\usepackage{fontspec}
+\setmainfont{Arial}                
+
+\usepackage{graphicx}
+\usepackage{array}
+\setlength{\tabcolsep}{2pt}        
+\renewcommand{\arraystretch}{1.0}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}m{#1}}
+
+\begin{document}
+\thispagestyle{empty}
+
+\begin{center}
+\begin{tabular}{C{2.0cm} L{0.19\linewidth} L{0.19\linewidth} L{0.19\linewidth} L{0.19\linewidth}}
+
+& \textbf{A} & \textbf{B} & \textbf{C} & \textbf{D} \\[0.4em]
+
+% proActiv
+proActiv &
+\includegraphics[width=\linewidth]{brain/proactiv/overall/overall_promoter_activity_category_percentage.pdf} &
+\includegraphics[width=\linewidth]{brain/proactiv/overall/overall_promoter_activity_position_category.pdf} &
+\includegraphics[width=\linewidth]{brain/proactiv/overall/overall_promoter_activity_single_multiple_category.pdf} &
+\includegraphics[width=\linewidth]{brain/proactiv/overall/overall_promoter_activity_geneexpression_correlation.pdf} \\[-0.4em]
+
+% Salmon
+Salmon &
+\includegraphics[width=\linewidth]{brain/salmon/overall/overall_promoter_activity_category_percentage.pdf} &
+\includegraphics[width=\linewidth]{brain/salmon/overall/overall_promoter_activity_position_category.pdf} &
+\includegraphics[width=\linewidth]{brain/salmon/overall/overall_promoter_activity_single_multiple_category.pdf} &
+\includegraphics[width=\linewidth]{brain/salmon/overall/overall_promoter_activity_geneexpression_correlation.pdf} \\[-0.4em]
+
+% DEXSeq
+DEXSeq &
+\includegraphics[width=\linewidth]{brain/dexseq/overall/overall_promoter_activity_category_percentage.pdf} &
+\includegraphics[width=\linewidth]{brain/dexseq/overall/overall_promoter_activity_position_category.pdf} &
+\includegraphics[width=\linewidth]{brain/dexseq/overall/overall_promoter_activity_single_multiple_category.pdf} &
+\includegraphics[width=\linewidth]{brain/dexseq/overall/overall_promoter_activity_geneexpression_correlation.pdf} \\[-0.4em]
+
+% CAGE
+CAGE &
+\includegraphics[width=\linewidth]{brain/cage/overall_promoter_activity_category_percentage.pdf} &
+\includegraphics[width=\linewidth]{brain/cage/overall_promoter_activity_position_category.pdf} &
+\includegraphics[width=\linewidth]{brain/cage/overall_promoter_activity_single_multiple_category.pdf} &
+\includegraphics[width=\linewidth]{brain/cage/overall_promoter_activity_geneexpression_correlation.pdf} \\
+
+\end{tabular}
+\end{center}
+
+\end{document}

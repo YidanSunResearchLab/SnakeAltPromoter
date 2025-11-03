@@ -1,79 +1,224 @@
-# SnakeAltPromoter Facilitates Differential Alternative Promoter Analysis
+# 🧬 SnakeAltPromoter: End-to-End Differential Alternative Promoter Analysis
 
-**SnakeAltPromoter** is a Snakemake-based pipeline designed for end-to-end analysis of alternative promoter. It streamlines the processing of RNA-seq data by integrating **FastQC**, **TrimGlore**, **STAR** and **multiQC**, and supports multiple state-of-the-art promoter counting algorithms including **Proactiv**, **DEXseq** and **Salmon**. Finally it includes differential analysis using **DESeq2** and **Proactiv**. This pipeline offers researchers a reproducible, modular, and scalable solution for analyzing alternative promoter for RNA-seq data across diverse experimental designs.
+**SnakeAltPromoter** is a **Snakemake-based pipeline** for streamlined, reproducible, and scalable analysis of **alternative promoter usage** from RNA-seq or CAGE data.
+It integrates all major steps—from raw read preprocessing to promoter-level quantification and differential analysis—using state-of-the-art tools.
 
-## Installation
+## 🧭 Workflow Overview
 
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
-   cd SnakeAltPromoter
-   ```
+Below is the schematic overview of the **SnakeAltPromoter** pipeline, as shown in our paper:
 
-2. **Install Dependencies**:
-   - Set up the environment:
-  ```bash
-  conda create -n SnakeAltPromoter -c conda-forge python>=3.8
-  conda activate SnakeAltPromoter
-  pip install .
-  ```
-   - Install UI version:
-   ```bash
-   conda install -c conda-forge streamlit pyarrow pandas -y
+![Workflow Overview](docs/workflow_overview.tiff)
 
-   ```
+*Figure 1. Overview of the SnakeAltPromoter pipeline, showing genome setup, RNA-seq/CAGE processing, promoter quantification, classification, and differential promoter usage analysis.*
 
-3. **Verify Installation**:
-   ```bash
-   Snakealtpromoter --help
-   ```
+---
 
-## Quick Start
+## ✳️ Key Features
 
-SnakeAltPromoter offers three main commands:
+* **End-to-end automation** of alternative promoter analysis from FASTQ to results.
+* **Integrated QC and preprocessing** via **FastQC**, **TrimGalore**, **STAR**, and **MultiQC**.
+* **Supports multiple promoter quantification tools:**
 
-### 1. Genome Setup
-Prepare genome indices and promoter annotation:
+  * [ProActiv](https://github.com/jiachenlieu/ProActiv)
+  * [DEXSeq](https://bioconductor.org/packages/release/bioc/html/DEXSeq.html)
+  * [Salmon](https://salmon.readthedocs.io/en/latest/)
+* **Built-in differential analysis** using **DESeq2** and ProActiv modules.
+* **Fully modular, reproducible, and scalable**—ideal for large multi-sample RNA-seq datasets.
+
+---
+
+## 🧩 Installation
+
+### 1. Install via Conda (Recommended)
+
 ```bash
-Genomesetup \
-  --organism hg38 \
-  --organism_fasta /path/to/your/genome.fa \
-  --genes_gtf /path/to/your/genes.gtf \
-  -o ./genome \
-  --threads 30
+# Create and activate environment
+conda create -n SnakeAltPromoter -c bioconda SnakeAltPromoter
+conda activate SnakeAltPromoter
 ```
 
-### 2.  RNA-Seq Processing for alternative promoter analysis
-Process FASTQs:
+### 2. Install via Pip
+
 ```bash
-Snakealtpromoter.py \
-  -i /path/to/input/fastqs/dir/ 
-  --genome_dir /path/to/genomesetup/dir/ 
-  -o /path/to/output/dir/ 
-  --threads 30 
-  --organism hg38 
-  --control_condition Healthy 
-  --test_condition Heart_Failure 
+pip install SnakeAltPromoter
 ```
 
-### 3. UI 
-Launch the UI for visualization:
+### 3. Manual Installation (Build from Source)
+
+```bash
+git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
+cd SnakeAltPromoter
+conda create -n SnakeAltPromoter -c conda-forge python>=3.8
+conda activate SnakeAltPromoter
+pip install .
+```
+
+### 4. Verify Installation
+
+```bash
+Snakealtpromoter --help
+```
+
+If successful, usage instructions and command-line options will be displayed.
+
+---
+
+## 🖥️ Optional: Launch GUI
+
+For a graphical interface:
+
 ```bash
 sap-ui
 ```
 
-## Documentation
-For detailed usage, see:
-- [Genomesetup.py](docs/Genomesetup.md)
-- [Snakealtpromoter.py](docs/Snakealtpromoter.md)
+---
 
-## Contributing
-Feel free to open issues or submit pull requests on [GitHub](https://github.com/YidanSunResearchLab/SnakeAltPromoter).
+## 🚀 Quick Start
 
-## Citation
-Please cite this paper: SnakeAltPromoter Facilitates Differential Alternative Promoter Analysis. [BioRxiv](https://www.biorxiv.org/content/10.1101/2025.08.16.669128v1).
+### Step 1. Genome Setup
 
-## License
-See [LICENSE](LICENSE) for details.
+Prepare genome indices and promoter annotations:
 
+```bash
+Genomesetup \
+  --organism hg38 \
+  --organism_fasta /path/to/genome.fa \
+  --genes_gtf /path/to/genes.gtf \
+  -o ./genome \
+  --threads 30
+```
+
+### Step 2. Process RNA-seq Data
+
+Run alternative promoter analysis:
+
+```bash
+Snakealtpromoter \
+  -i /path/to/input_fastqs/ \
+  --genome_dir ./genome \
+  -o ./output/ \
+  --threads 30 \
+  --organism hg38 --trim \
+  --sample_sheet data/samplesheet/Heart.tsv \
+  --method cage --reads single   # Add these only for CAGE data
+```
+
+For detailed documentation, see:
+
+* [Genomesetup](docs/Genomesetup.md)
+* [Snakealtpromoter](docs/Snakealtpromoter.md)
+
+---
+
+## 🧪 Minimal Test Case
+
+Example data are available in the `data/` directory.
+Download the **GENCODE v46** genome FASTA and GTF from [GENCODE](https://www.gencodegenes.org/human/release_46.html).
+
+### 1. Genome Setup
+
+```bash
+Genomesetup \
+  --organism hg38 \
+  --organism_fasta /path/to/genome.fa \
+  --genes_gtf /path/to/genes.gtf \
+  -o ./genome \
+  --threads 30
+```
+
+### 2. Run Test Analysis
+
+```bash
+git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
+cd SnakeAltPromoter
+Snakealtpromoter \
+  -i data/ \
+  --genome_dir ./genome \
+  -o test_output \
+  --threads 30 \
+  --organism hg38 --trim \
+  --sample_sheet data/samplesheet/samplesheet.tsv
+```
+
+Output directory structure is described in the documentation:
+
+* [Genomesetup](docs/Genomesetup.md)
+* [Snakealtpromoter](docs/Snakealtpromoter.md)
+
+---
+
+## 📊 Reproduce Results from the Paper
+
+To reproduce analyses in the **SnakeAltPromoter** manuscript:
+
+1. Download **GENCODE v46** genome FASTA and GTF.
+2. Retrieve **heart RNA-seq** and **CAGE** data from
+   [GSE147236](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE147236) using `fastq-dump`.
+
+### 1. Genome Setup
+
+```bash
+Genomesetup \
+  --organism hg38 \
+  --organism_fasta /path/to/genome.fa \
+  --genes_gtf /path/to/genes.gtf \
+  -o ./genome \
+  --threads 30
+```
+
+### 2. RNA-seq Processing
+
+```bash
+Snakealtpromoter \
+  -i /path/to/heart_RNAseq/ \
+  --genome_dir ./genome \
+  -o heart_RNAseq_output \
+  --threads 30 \
+  --organism hg38 --trim \
+  --sample_sheet data/samplesheet/samplesheet.tsv
+```
+
+### 3. CAGE Processing
+
+```bash
+Snakealtpromoter \
+  -i /path/to/heart_CAGE/ \
+  --genome_dir ./genome \
+  -o heart_CAGE_output \
+  --threads 30 \
+  --organism hg38 \
+  --sample_sheet data/samplesheet/Heart.tsv \
+  --method cage --reads single
+```
+
+### 4. Compare with Published Results
+
+| Supplementary Table | Description                                                                  |
+| ------------------- | ---------------------------------------------------------------------------- |
+| **Table 1**         | Comprehensive promoter coordinates                                           |
+| **Table 2**         | Promoter classifications (major/minor) by ProActiv, Salmon, DEXSeq, and CAGE |
+| **Table 3**         | Promoter counts across samples                                               |
+| **Table 4**         | Differential promoter activity (healthy vs. failure) across tools            |
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome!
+Please open an issue or submit a pull request via [GitHub](https://github.com/YidanSunResearchLab/SnakeAltPromoter).
+
+---
+
+## 🧾 Citation
+
+If you use **SnakeAltPromoter**, please cite:
+
+> Tan J. *et al.* (2025). **SnakeAltPromoter Facilitates Differential Alternative Promoter Analysis.**
+> *bioRxiv*. [https://doi.org/10.1101/2025.08.16.669128](https://www.biorxiv.org/content/10.1101/2025.08.16.669128v1)
+
+---
+
+## ⚖️ License
+
+See the [LICENSE](LICENSE) file for details.
 
