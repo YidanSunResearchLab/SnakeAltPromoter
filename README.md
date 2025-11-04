@@ -99,7 +99,7 @@ Snakealtpromoter \
   -o ./output/ \
   --threads 30 \
   --organism hg38 --trim \
-  --sample_sheet snakealtpromoter/data/samplesheet/Heart.tsv \
+  --sample_sheet snakealtpromoter/data/samplesheet/Heart_RNAseq.tsv \
   --method cage --reads single   # Add these only for CAGE data
 ```
 
