@@ -9,7 +9,7 @@ setup(
     author_email="syidan@wustl.edu",
     url="https://github.com/YidanSunResearchLab/SnakeAltPromoter",  # Updated username
     packages=find_packages(),  # Includes workflows/
-    python_requires=">=3.8",  # Bumped to 3.8 for modern support
+    python_requires=">=3.10",  # Bumped to 3.10 for modern support
     install_requires=[
         "snakemake>=8.28.0",  # Core dependency
         "streamlit",          # UI dependencies now default
@@ -36,7 +36,7 @@ setup(
     },
     classifiers=[
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.8",  # Matches python_requires
+        "Programming Language :: Python :: 3.10",  # Matches python_requires
         "Operating System :: POSIX",
         "Intended Audience :: Science/Research",
         "Topic :: Scientific/Engineering :: Bio-Informatics",

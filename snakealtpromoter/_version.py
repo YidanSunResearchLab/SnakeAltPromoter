@@ -1,5 +1,5 @@
 """
-HiChIP Snake: A Snakemake pipeline for HiChIP data analysis.
+SnakeAltPromoter: End-to-End Differential Alternative Promoter Analysis.
 """
 
 __version__ = "1.0.0"

@@ -169,25 +169,29 @@ Genomesetup \
 ### 2. RNA-seq Processing
 
 ```bash
+git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
+cd SnakeAltPromoter
 Snakealtpromoter \
   -i /path/to/heart_RNAseq/ \
   --genome_dir ./genome \
   -o heart_RNAseq_output \
   --threads 30 \
   --organism hg38 --trim \
-  --sample_sheet snakealtpromoter/data/samplesheet/samplesheet.tsv
+  --sample_sheet snakealtpromoter/data/samplesheet/Heart_RNAseq.tsv
 ```
 
 ### 3. CAGE Processing
 
 ```bash
+git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
+cd SnakeAltPromoter
 Snakealtpromoter \
   -i /path/to/heart_CAGE/ \
   --genome_dir ./genome \
   -o heart_CAGE_output \
   --threads 30 \
   --organism hg38 \
-  --sample_sheet snakealtpromoter/data/samplesheet/Heart.tsv \
+  --sample_sheet snakealtpromoter/data/samplesheet/Heart_CAGE.tsv \
   --method cage --reads single
 ```
 
