@@ -1,4 +1,5 @@
-
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import os
 import argparse
 import subprocess
@@ -57,7 +58,7 @@ def main():
 
     # Generate unique log file name
     log_pattern = os.path.join(output_dir, f"genomesetup_run_{args.organism}_*.log")
-    log_number = max([int(re.search(r"genomesetup_run_.+_(\d+)\.log", os.path.basename(f)).group(1)) 
+    log_number = max([int(re.search(r"genomesetup_run_.+_(\d+)\.log", os.path.basename(f)).group(1))
                      for f in glob.glob(log_pattern)], default=0) + 1
     log_file_path = os.path.join(output_dir, f"genomesetup_run_{args.organism}_{log_number}.log")
 

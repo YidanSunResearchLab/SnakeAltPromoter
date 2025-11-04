@@ -7,7 +7,7 @@ It integrates all major steps—from raw read preprocessing to promoter-level qu
 
 Below is the schematic overview of the **SnakeAltPromoter** pipeline, as shown in our paper:
 
-![Workflow Overview](docs/workflow_overview.tiff)
+![Workflow Overview](snakealtpromoter/docs/workflow_overview.png)
 
 *Figure 1. Overview of the SnakeAltPromoter pipeline, showing genome setup, RNA-seq/CAGE processing, promoter quantification, classification, and differential promoter usage analysis.*
 
@@ -19,7 +19,7 @@ Below is the schematic overview of the **SnakeAltPromoter** pipeline, as shown i
 * **Integrated QC and preprocessing** via **FastQC**, **TrimGalore**, **STAR**, and **MultiQC**.
 * **Supports multiple promoter quantification tools:**
 
-  * [ProActiv](https://github.com/jiachenlieu/ProActiv)
+  * [ProActiv](https://github.com/GoekeLab/proActiv)
   * [DEXSeq](https://bioconductor.org/packages/release/bioc/html/DEXSeq.html)
   * [Salmon](https://salmon.readthedocs.io/en/latest/)
 * **Built-in differential analysis** using **DESeq2** and ProActiv modules.
@@ -48,7 +48,7 @@ pip install SnakeAltPromoter
 ```bash
 git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
 cd SnakeAltPromoter
-conda create -n SnakeAltPromoter -c conda-forge python>=3.8
+conda create -n SnakeAltPromoter -c conda-forge python>=3.10
 conda activate SnakeAltPromoter
 pip install .
 ```
@@ -99,20 +99,20 @@ Snakealtpromoter \
   -o ./output/ \
   --threads 30 \
   --organism hg38 --trim \
-  --sample_sheet data/samplesheet/Heart.tsv \
+  --sample_sheet snakealtpromoter/data/samplesheet/Heart.tsv \
   --method cage --reads single   # Add these only for CAGE data
 ```
 
 For detailed documentation, see:
 
-* [Genomesetup](docs/Genomesetup.md)
-* [Snakealtpromoter](docs/Snakealtpromoter.md)
+* [Genomesetup](snakealtpromoter/docs/Genomesetup.md)
+* [Snakealtpromoter](snakealtpromoter/docs/Snakealtpromoter.md)
 
 ---
 
 ## 🧪 Minimal Test Case
 
-Example data are available in the `data/` directory.
+Example data are available in the `snakealtpromoter/data/` directory.
 Download the **GENCODE v46** genome FASTA and GTF from [GENCODE](https://www.gencodegenes.org/human/release_46.html).
 
 ### 1. Genome Setup
@@ -132,18 +132,18 @@ Genomesetup \
 git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
 cd SnakeAltPromoter
 Snakealtpromoter \
-  -i data/ \
+  -i snakealtpromoter/data/ \
   --genome_dir ./genome \
   -o test_output \
   --threads 30 \
   --organism hg38 --trim \
-  --sample_sheet data/samplesheet/samplesheet.tsv
+  --sample_sheet snakealtpromoter/data/samplesheet/samplesheet.tsv
 ```
 
 Output directory structure is described in the documentation:
 
-* [Genomesetup](docs/Genomesetup.md)
-* [Snakealtpromoter](docs/Snakealtpromoter.md)
+* [Genomesetup](snakealtpromoter/docs/Genomesetup.md)
+* [Snakealtpromoter](snakealtpromoter/docs/Snakealtpromoter.md)
 
 ---
 
@@ -175,7 +175,7 @@ Snakealtpromoter \
   -o heart_RNAseq_output \
   --threads 30 \
   --organism hg38 --trim \
-  --sample_sheet data/samplesheet/samplesheet.tsv
+  --sample_sheet snakealtpromoter/data/samplesheet/samplesheet.tsv
 ```
 
 ### 3. CAGE Processing
@@ -187,7 +187,7 @@ Snakealtpromoter \
   -o heart_CAGE_output \
   --threads 30 \
   --organism hg38 \
-  --sample_sheet data/samplesheet/Heart.tsv \
+  --sample_sheet snakealtpromoter/data/samplesheet/Heart.tsv \
   --method cage --reads single
 ```
 
@@ -220,5 +220,4 @@ If you use **SnakeAltPromoter**, please cite:
 
 ## ⚖️ License
 
-See the [LICENSE](LICENSE) file for details.
-
+See the [LICENSE](LICENSE.md) file for details.
