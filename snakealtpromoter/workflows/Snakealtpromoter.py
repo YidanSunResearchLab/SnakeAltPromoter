@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import os
 import argparse
 import subprocess
@@ -33,7 +35,7 @@ def main():
     parser.add_argument("--slurm-account", default=None, help="SLURM account; passed via --default-resources slurm_account=<...>.")
     parser.add_argument("--slurm-partition", default=None, help="SLURM partition; passed via --default-resources slurm_partition=<...>.")
     parser.add_argument("--set-resources", action="append", default=[], help="Per-rule resource override like '<rule>:slurm_partition=<PART>'. Repeatable. Mirrors Snakemake docs.")
-    
+
     # Parse known arguments, capturing extra Snakemake args
     args, extra_args = parser.parse_known_args()
 
@@ -53,7 +55,7 @@ def main():
     else:
         raise ValueError("Invalid --reads value. Must be 'single' or 'paired'.")
 
-    
+
 
     threads = args.threads
     method = args.method
@@ -151,7 +153,7 @@ def main():
         cond_map = {}
         batch_map = {}
         role_map = {}
-        
+
         with open(sample_sheet_path, newline="") as tsvfile:
             reader = csv.DictReader(tsvfile, delimiter="\t")
             required = {"sampleName", "condition", "differential"}
@@ -205,7 +207,7 @@ def main():
     # Main usage
     #sample_sheet_path = args.sample_sheet or os.path.join(input_dir, "sampleSheet.tsv")
     samples_detected = detect_samples(input_dir, reads_choice)
-    
+
     # Determine sample sheet path
     if args.sample_sheet:
         sample_sheet_path = args.sample_sheet
@@ -222,7 +224,7 @@ def main():
                 writer.writerow([sample, "wt", "batch1", "control"])
         print(f"[INFO] Created default sample sheet at: {sample_sheet_path}", file=sys.stderr)
         print("[INFO] Defaults used: condition=wt, batch=batch1, differential=control", file=sys.stderr)
-    
+
     sample_order, condition_map, batch_map, role_map, test_condition, control_condition = load_sample_sheet(sample_sheet_path)
 
 
@@ -258,7 +260,7 @@ def main():
         )
 
 
-    
+
     # Build Snakemake command
     snakemake_cmd = [
         "snakemake",
@@ -314,14 +316,14 @@ def main():
         # per-rule overrides (e.g. <rule>:slurm_partition=highmem)
         for res in args.set_resources:
             snakemake_cmd += ["--set-resources", res]
-    
+
     # Append any extra Snakemake arguments
     if extra_args:
         snakemake_cmd.extend(extra_args)
 
     # Generate unique log file name
     log_pattern = os.path.join(output_dir, "snakealtpromoter_run_*.log")
-    log_number = max([int(re.search(r"snakealtpromoter_run_(\d+)\.log", f).group(1)) 
+    log_number = max([int(re.search(r"snakealtpromoter_run_(\d+)\.log", f).group(1))
                     for f in glob.glob(log_pattern)], default=0) + 1
     log_file_path = os.path.join(output_dir, f"snakealtpromoter_run_{log_number}.log")
 
