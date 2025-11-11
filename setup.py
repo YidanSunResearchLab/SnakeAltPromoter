@@ -19,7 +19,7 @@ setup(
 
     package_data={
         "workflows": [
-            "ui/*.py",
+            "../ui/*.py",
             "../scripts/*",
             "../rules/*.Snakefile",       # Snakemake workflows
             "../rules/envs/*.yaml",       # Conda envs

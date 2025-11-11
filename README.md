@@ -1,4 +1,4 @@
-# 🧬 SnakeAltPromoter: End-to-End Differential Alternative Promoter Analysis
+# 🧬 SnakeAltPromoter Facilitates Differential Alternative Promoter Analysis
 
 **SnakeAltPromoter** is a **Snakemake-based pipeline** for streamlined, reproducible, and scalable analysis of **alternative promoter usage** from RNA-seq or CAGE data.
 It integrates all major steps—from raw read preprocessing to promoter-level quantification and differential analysis—using state-of-the-art tools.
@@ -40,7 +40,7 @@ conda activate SnakeAltPromoter
 ### 2. Install via Pip
 
 ```bash
-pip install SnakeAltPromoter
+pip install --user --no-cache-dir SnakeAltPromoter
 ```
 
 ### 3. Manual Installation (Build from Source)
@@ -73,6 +73,7 @@ sap-ui
 
 ---
 
+<<<<<<< HEAD
 ## 🚀 Quick Start
 
 ### Step 1. Genome Setup
@@ -110,18 +111,27 @@ For detailed documentation, see:
 
 ---
 
+=======
+>>>>>>> 3deaca7 (readme)
 ## 🧪 Minimal Test Case
 
-Example data are available in the `snakealtpromoter/data/` directory.
-Download the **GENCODE v46** genome FASTA and GTF from [GENCODE](https://www.gencodegenes.org/human/release_46.html).
+Example human chr22 genome fasta and gtf files are available in the `snakealtpromoter/data/` directory.
+Example RNA-seq data are available in the `snakealtpromoter/data/` directory.
 
 ### 1. Genome Setup
 
 ```bash
+git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
+cd SnakeAltPromoter
 Genomesetup \
   --organism hg38 \
+<<<<<<< HEAD
   --organism_fasta /full/path/to/genome.fa \
   --genes_gtf /full/path/to/genes.gtf \
+=======
+  --organism_fasta "$(pwd)/snakealtpromoter/data/hg38.fa" \
+  --genes_gtf "$(pwd)/snakealtpromoter/data/hg38.gtf" \
+>>>>>>> 3deaca7 (readme)
   -o ./genome \
   --threads 30
 ```
@@ -132,12 +142,12 @@ Genomesetup \
 git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
 cd SnakeAltPromoter
 Snakealtpromoter \
-  -i snakealtpromoter/data/ \
-  --genome_dir ./genome \
+  -i "$(pwd)/snakealtpromoter/data" \
+  --genome_dir "$(pwd)/genome" \
   -o test_output \
   --threads 30 \
   --organism hg38 --trim \
-  --sample_sheet snakealtpromoter/data/samplesheet/samplesheet.tsv
+  --sample_sheet "$(pwd)/snakealtpromoter/data/samplesheet/samplesheet.tsv"
 ```
 
 Output directory structure is described in the documentation:
@@ -151,7 +161,7 @@ Output directory structure is described in the documentation:
 
 To reproduce analyses in the **SnakeAltPromoter** manuscript:
 
-1. Download **GENCODE v46** genome FASTA and GTF.
+1. Download the **GENCODE v46** genome FASTA and GTF from [GENCODE](https://www.gencodegenes.org/human/release_46.html).
 2. Retrieve **heart RNA-seq** and **CAGE** data from
    [GSE147236](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE147236) using `fastq-dump`.
 
@@ -160,9 +170,15 @@ To reproduce analyses in the **SnakeAltPromoter** manuscript:
 ```bash
 Genomesetup \
   --organism hg38 \
+<<<<<<< HEAD
   --organism_fasta /full/path/to/genome.fa \
   --genes_gtf /full/path/to/genes.gtf \
   -o ./genome \
+=======
+  --organism_fasta /Absolute/path/to/genome.fa \
+  --genes_gtf /Absolute/path/to/genes.gtf \
+  -o /Absolute/path/to/genome \
+>>>>>>> 3deaca7 (readme)
   --threads 30
 ```
 
@@ -172,12 +188,17 @@ Genomesetup \
 git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
 cd SnakeAltPromoter
 Snakealtpromoter \
+<<<<<<< HEAD
   -i /full/path/to/heart_RNAseq/ \
   --genome_dir ./genome \
+=======
+  -i /Absolute/path/to/heart_RNAseq/ \
+  --genome_dir /Absolute/path/to/genome \
+>>>>>>> 3deaca7 (readme)
   -o heart_RNAseq_output \
   --threads 30 \
   --organism hg38 --trim \
-  --sample_sheet snakealtpromoter/data/samplesheet/Heart_RNAseq.tsv
+  --sample_sheet "$(pwd)/snakealtpromoter/data/samplesheet/Heart_RNAseq.tsv"
 ```
 
 ### 3. CAGE Processing
@@ -186,12 +207,17 @@ Snakealtpromoter \
 git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
 cd SnakeAltPromoter
 Snakealtpromoter \
+<<<<<<< HEAD
   -i /full/path/to/heart_CAGE/ \
   --genome_dir ./genome \
+=======
+  -i /Absolute/path/to/heart_CAGE/ \
+  --genome_dir /Absolute/path/to/genome \
+>>>>>>> 3deaca7 (readme)
   -o heart_CAGE_output \
   --threads 30 \
   --organism hg38 \
-  --sample_sheet snakealtpromoter/data/samplesheet/Heart_CAGE.tsv \
+  --sample_sheet "$(pwd)/snakealtpromoter/data/samplesheet/Heart_CAGE.tsv" \
   --method cage --reads single
 ```
 
@@ -203,6 +229,43 @@ Snakealtpromoter \
 | **Table 2**         | Promoter classifications (major/minor) by ProActiv, Salmon, DEXSeq, and CAGE |
 | **Table 3**         | Promoter counts across samples                                               |
 | **Table 4**         | Differential promoter activity (healthy vs. failure) across tools            |
+
+---
+
+## 🚀 Quick Start for your own genome and sequencing data
+
+### Step 1. Genome Setup
+
+Prepare genome indices and promoter annotations:
+
+```bash
+Genomesetup \
+  --organism hg38 \
+  --organism_fasta /Absolute/path/to/genome.fa \
+  --genes_gtf /Absolute/path/to/genes.gtf \
+  -o /Absolute/path/to/genome \
+  --threads 30
+```
+
+### Step 2. Process RNA-seq Data
+
+Run alternative promoter analysis:
+
+```bash
+Snakealtpromoter \
+  -i /Absolute/path/to/input_fastqs/ \
+  --genome_dir /Absolute/path/to/genome \
+  -o ./output/ \
+  --threads 30 \
+  --organism hg38 --trim \
+  --sample_sheet /Absolute/path/to/samplesheet.tsv \
+  --method cage --reads single   # Add these only for CAGE data
+```
+
+For detailed documentation, see:
+
+* [Genomesetup](snakealtpromoter/docs/Genomesetup.md)
+* [Snakealtpromoter](snakealtpromoter/docs/Snakealtpromoter.md)
 
 ---
 
