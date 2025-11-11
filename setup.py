@@ -10,6 +10,7 @@ setup(
     url="https://github.com/YidanSunResearchLab/SnakeAltPromoter",  # Updated username
     packages=find_packages(),  # Includes workflows/
     python_requires=">=3.10",  # Bumped to 3.10 for modern support
+    include_package_data=True,
     install_requires=[
         "snakemake>=8.28.0",  # Core dependency
         "streamlit",          # UI dependencies now default
@@ -18,20 +19,19 @@ setup(
     ],
 
     package_data={
-        "workflows": [
-            "../ui/*.py",
-            "../scripts/*",
-            "../rules/*.Snakefile",       # Snakemake workflows
-            "../rules/envs/*.yaml",       # Conda envs
-            #"../organisms/*"              # Small organism files only
+        "snakealtpromoter": [
+            "rules/*.Snakefile",       
+            "rules/envs/*.yaml",      
+            "ui/*.py",
+            "scripts/*",
         ],
     },
     entry_points={
         "console_scripts": [
-            "Genomesetup = workflows.Genomesetup:main",
-            "Snakealtpromoter = workflows.Snakealtpromoter:main",
-            "sap=cli:main",
-            "sap-ui=ui.launch:main",
+            "Genomesetup = snakealtpromoter.workflows.Genomesetup:main",
+            "Snakealtpromoter = snakealtpromoter.workflows.Snakealtpromoter:main",
+            "sap=snakealtpromoter.cli:main",
+            "sap-ui=snakealtpromoter.ui.launch:main",
         ]
     },
     classifiers=[

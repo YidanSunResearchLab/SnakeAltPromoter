@@ -36,6 +36,7 @@ sap-ui = "snakealtpromoter.ui.launch:main"
 
 
 [tool.setuptools]
+include-package-data = true
 packages = [
     "snakealtpromoter",
     "snakealtpromoter.data",
@@ -51,9 +52,11 @@ packages = [
 
 
 [tool.setuptools.package-data]
-workflows = [
-  "rules/**",
-  "scripts/**"
+snakealtpromoter = [
+  "rules/*.Snakefile",
+  "rules/envs/*.yaml",
+  "ui/*.py",
+  "scripts/*",
 ]
 
 [project.urls]

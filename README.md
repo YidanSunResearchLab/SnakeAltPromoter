@@ -48,7 +48,7 @@ pip install --user --no-cache-dir SnakeAltPromoter
 ```bash
 git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
 cd SnakeAltPromoter
-conda create -n SnakeAltPromoter -c conda-forge python>=3.10
+conda create -n SnakeAltPromoter -c conda-forge python
 conda activate SnakeAltPromoter
 pip install .
 ```
