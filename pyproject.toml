@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=72.1.0", "setuptools-scm", "wheel"]
+requires = ["setuptools>=72.1.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 
@@ -8,7 +8,7 @@ name = "SnakeAltPromoter"
 version = "1.0.0"
 description = "A Snakemake pipeline for alternative promoter analysis"
 readme = "README.md"
-license = { file = "LICENSE.md" }
+license = "MIT"
 authors = [
     { name = "Yidan Sun", email = "syidan@wustl.edu" },
 ]
@@ -16,7 +16,6 @@ maintainers = [
     { name = "Jared Lalmansingh", email = "jared.lalmansingh@wustl.edu" },
 ]
 classifiers=[
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.10",
     "Operating System :: POSIX",
     "Intended Audience :: Science/Research",
@@ -39,6 +38,13 @@ sap-ui = "snakealtpromoter.ui.launch:main"
 [tool.setuptools]
 packages = [
     "snakealtpromoter",
+    "snakealtpromoter.data",
+    "snakealtpromoter.data.samplesheet",
+    "snakealtpromoter.docs",
+    "snakealtpromoter.rules",
+    "snakealtpromoter.rules.envs",
+    "snakealtpromoter.scripts",
+    "snakealtpromoter.scripts.downstream_plots",
     "snakealtpromoter.ui",
     "snakealtpromoter.workflows",
 ]
