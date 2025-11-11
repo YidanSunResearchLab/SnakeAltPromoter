@@ -45,9 +45,9 @@ with tab1:
     st.subheader("Genome setup — build genome index and annotations")
     organism = st.text_input("organism", value="hg38")
     fasta = st.text_input("organism_fasta (path to genome.fa)",
-                          value="/path/to/your/genome.fa")
+                          value="/full/path/to/your/genome.fa")
     gtf = st.text_input("genes_gtf (path to genes.gtf)",
-                        value="/path/to/your/genes.gtf")
+                        value="/full/path/to/your/genes.gtf")
     out_dir = st.text_input("Output directory (-o)",
                             value="./genome")
     threads = st.number_input("Threads (--threads)",
@@ -69,11 +69,11 @@ with tab1:
 with tab2:
     st.subheader("Snakealtpromoter — main RNA-seq pipeline")
     input_dir = st.text_input("-i Input FASTQ directory",
-                              value="/path/to/input/fastqs/dir/")
+                              value="/full/path/to/input/fastqs/dir/")
     genome_dir = st.text_input("--genome_dir (output from the previous step)",
-                               value="/path/to/genomesetup/dir/")
+                               value="/full/path/to/genomesetup/dir/")
     out_dir2 = st.text_input("-o Output directory",
-                             value="/path/to/output/dir/")
+                             value="/full/path/to/output/dir/")
     threads2 = st.number_input("--threads",
                                min_value=1,
                                max_value=128,

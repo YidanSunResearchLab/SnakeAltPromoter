@@ -82,8 +82,8 @@ Prepare genome indices and promoter annotations:
 ```bash
 Genomesetup \
   --organism hg38 \
-  --organism_fasta /path/to/genome.fa \
-  --genes_gtf /path/to/genes.gtf \
+  --organism_fasta /full/path/to/genome.fa \
+  --genes_gtf /full/path/to/genes.gtf \
   -o ./genome \
   --threads 30
 ```
@@ -94,7 +94,7 @@ Run alternative promoter analysis:
 
 ```bash
 Snakealtpromoter \
-  -i /path/to/input_fastqs/ \
+  -i /full/path/to/input_fastqs/ \
   --genome_dir ./genome \
   -o ./output/ \
   --threads 30 \
@@ -105,8 +105,8 @@ Snakealtpromoter \
 
 For detailed documentation, see:
 
-* [Genomesetup](snakealtpromoter/docs/Genomesetup.md)
-* [Snakealtpromoter](snakealtpromoter/docs/Snakealtpromoter.md)
+* [Genomesetup](https://github.com/YidanSunResearchLab/SnakeAltPromoter/blob/main/snakealtpromoter/docs/Genomesetup.md)
+* [Snakealtpromoter](https://github.com/YidanSunResearchLab/SnakeAltPromoter/blob/main/snakealtpromoter/docs/Snakealtpromoter.md)
 
 ---
 
@@ -120,8 +120,8 @@ Download the **GENCODE v46** genome FASTA and GTF from [GENCODE](https://www.gen
 ```bash
 Genomesetup \
   --organism hg38 \
-  --organism_fasta /path/to/genome.fa \
-  --genes_gtf /path/to/genes.gtf \
+  --organism_fasta /full/path/to/genome.fa \
+  --genes_gtf /full/path/to/genes.gtf \
   -o ./genome \
   --threads 30
 ```
@@ -142,8 +142,8 @@ Snakealtpromoter \
 
 Output directory structure is described in the documentation:
 
-* [Genomesetup](snakealtpromoter/docs/Genomesetup.md)
-* [Snakealtpromoter](snakealtpromoter/docs/Snakealtpromoter.md)
+* [Genomesetup](https://github.com/YidanSunResearchLab/SnakeAltPromoter/blob/main/snakealtpromoter/docs/Genomesetup.md)
+* [Snakealtpromoter](https://github.com/YidanSunResearchLab/SnakeAltPromoter/blob/main/snakealtpromoter/docs/Snakealtpromoter.md)
 
 ---
 
@@ -160,8 +160,8 @@ To reproduce analyses in the **SnakeAltPromoter** manuscript:
 ```bash
 Genomesetup \
   --organism hg38 \
-  --organism_fasta /path/to/genome.fa \
-  --genes_gtf /path/to/genes.gtf \
+  --organism_fasta /full/path/to/genome.fa \
+  --genes_gtf /full/path/to/genes.gtf \
   -o ./genome \
   --threads 30
 ```
@@ -172,7 +172,7 @@ Genomesetup \
 git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
 cd SnakeAltPromoter
 Snakealtpromoter \
-  -i /path/to/heart_RNAseq/ \
+  -i /full/path/to/heart_RNAseq/ \
   --genome_dir ./genome \
   -o heart_RNAseq_output \
   --threads 30 \
@@ -186,7 +186,7 @@ Snakealtpromoter \
 git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
 cd SnakeAltPromoter
 Snakealtpromoter \
-  -i /path/to/heart_CAGE/ \
+  -i /full/path/to/heart_CAGE/ \
   --genome_dir ./genome \
   -o heart_CAGE_output \
   --threads 30 \
