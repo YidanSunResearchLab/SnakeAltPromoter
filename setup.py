@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="SnakeAltPromoter",
-    version="1.0.1",
+    version="1.0.2",
     description="A Snakemake pipeline for alternative promoter analysis",
     author="Yidan Sun",
     author_email="syidan@wustl.edu",

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "SnakeAltPromoter"
-version = "1.0.1"
+version = "1.0.2"
 description = "A Snakemake pipeline for alternative promoter analysis"
 readme = "README.md"
 license = { file = "LICENSE.md" }
