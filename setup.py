@@ -25,14 +25,11 @@ setup(
     # enables legacy builds via `python setup.py install`. (See PEP 517 and 518)
     package_data={
         "snakealtpromoter": [
-            "data/*",
-            "data/samplesheet/*",
-            "docs/*",
+            "data/**",
+            "docs/**",
             "rules/*.Snakefile",
             "rules/envs/*.yaml",
-            "scripts/*",
-            "ui/*.py",
-            "workflows/*",
+            "scripts/downstream_plots/**",
         ],
     },
     entry_points={

@@ -8,7 +8,7 @@ name = "SnakeAltPromoter"
 version = "1.0.1"
 description = "A Snakemake pipeline for alternative promoter analysis"
 readme = "README.md"
-license = "MIT"
+license = { file = "LICENSE.md" }
 authors = [
     { name = "Yidan Sun", email = "syidan@wustl.edu" },
 ]
@@ -41,13 +41,9 @@ sap-ui = "snakealtpromoter.ui.launch:main"
 include-package-data = true
 packages = [
     "snakealtpromoter",
-    "snakealtpromoter.data",
-    "snakealtpromoter.data.samplesheet",
-    "snakealtpromoter.docs",
     "snakealtpromoter.rules",
     "snakealtpromoter.rules.envs",
     "snakealtpromoter.scripts",
-    "snakealtpromoter.scripts.downstream_plots",
     "snakealtpromoter.ui",
     "snakealtpromoter.workflows",
 ]
@@ -55,11 +51,11 @@ packages = [
 
 [tool.setuptools.package-data]
 snakealtpromoter = [
-  "rules/*.Snakefile",
-  "rules/envs/*.yaml",
-  "ui/*.py",
-  "scripts/*",
+    "data/**",
+    "docs/**",
+    "scripts/downstream_plots/**",
 ]
+
 
 [project.urls]
 homepage = "https://github.com/YidanSunResearchLab/SnakeAltPromoter"

@@ -1,0 +1,5 @@
+recursive-include snakealtpromoter/data *
+recursive-include snakealtpromoter/docs *
+recursive-include snakealtpromoter/scripts/downstream_plots *
+recursive-include snakealtpromoter/rules *
+recursive-include snakealtpromoter/rules/envs *
