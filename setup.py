@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="SnakeAltPromoter",
-    version="1.0.0",
+    version="1.0.1",
     description="A Snakemake pipeline for alternative promoter analysis",
     author="Yidan Sun",
     author_email="syidan@wustl.edu",
@@ -18,12 +18,21 @@ setup(
         "pandas",
     ],
 
+    # When `pyproject.toml` is present, `setup.py` is not the entry point
+    # during install. However, it may be still read indirectly for consultation
+    #  - i.e. if it's called by `pyproject.toml`. For e.g. all build actions in
+    # the README.md - e.g. `pip install .` will use `pyproject.toml` - `setup.py`
+    # enables legacy builds via `python setup.py install`. (See PEP 517 and 518)
     package_data={
         "snakealtpromoter": [
-            "rules/*.Snakefile",       
-            "rules/envs/*.yaml",      
-            "ui/*.py",
+            "data/*",
+            "data/samplesheet/*",
+            "docs/*",
+            "rules/*.Snakefile",
+            "rules/envs/*.yaml",
             "scripts/*",
+            "ui/*.py",
+            "workflows/*",
         ],
     },
     entry_points={

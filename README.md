@@ -7,7 +7,7 @@ It integrates all major steps—from raw read preprocessing to promoter-level qu
 
 Below is the schematic overview of the **SnakeAltPromoter** pipeline, as shown in our paper:
 
-![Workflow Overview](snakealtpromoter/docs/workflow_overview.png)
+![Workflow Overview](https://raw.githubusercontent.com/YidanSunResearchLab/SnakeAltPromoter/main/snakealtpromoter/docs/workflow_overview.png)
 
 *Figure 1. Overview of the SnakeAltPromoter pipeline, showing genome setup, RNA-seq/CAGE processing, promoter quantification, classification, and differential promoter usage analysis.*
 
