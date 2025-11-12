@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "SnakeAltPromoter"
-version = "1.0.2"
+version = "1.0.3"
 description = "A Snakemake pipeline for alternative promoter analysis"
 readme = "README.md"
 license = { file = "LICENSE.md" }
@@ -41,9 +41,13 @@ sap-ui = "snakealtpromoter.ui.launch:main"
 include-package-data = true
 packages = [
     "snakealtpromoter",
+    "snakealtpromoter.data",
+    "snakealtpromoter.data.samplesheet",
+    "snakealtpromoter.docs",
     "snakealtpromoter.rules",
     "snakealtpromoter.rules.envs",
     "snakealtpromoter.scripts",
+    "snakealtpromoter.scripts.downstream_plots",
     "snakealtpromoter.ui",
     "snakealtpromoter.workflows",
 ]
@@ -51,9 +55,10 @@ packages = [
 
 [tool.setuptools.package-data]
 snakealtpromoter = [
-    "data/**",
-    "docs/**",
-    "scripts/downstream_plots/**",
+    "rules/*.Snakefile",
+    "rules/envs/*.yaml",
+    "ui/*.py",
+    "scripts/*",
 ]
 
 
