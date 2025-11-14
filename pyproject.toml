@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "SnakeAltPromoter"
-version = "1.0.4"
+version = "1.0.5"
 description = "A Snakemake pipeline for alternative promoter analysis"
 readme = "README.md"
 license = { file = "LICENSE.md" }
@@ -16,7 +16,7 @@ maintainers = [
     { name = "Jared Lalmansingh", email = "jared.lalmansingh@wustl.edu" },
 ]
 classifiers=[
-    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Operating System :: POSIX",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Bio-Informatics",
@@ -27,7 +27,7 @@ dependencies = [
     "pyarrow",
     "pandas",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 
 [project.scripts]
