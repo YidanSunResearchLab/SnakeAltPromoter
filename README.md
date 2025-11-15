@@ -29,11 +29,11 @@ Below is the schematic overview of the **SnakeAltPromoter** pipeline, as shown i
 
 ## 🧩 Installation
 
-### 1. Install via Conda (Recommended)
+### 1. Install via Conda (Recommended). **Note that Python versions 3.11 - 3.13 are natively supported.**
 
 ```bash
 # Create and activate environment
-conda create -n SnakeAltPromoter -c bioconda SnakeAltPromoter
+conda create -n SnakeAltPromoter snakealtpromoter python=3.13 -c conda-forge -c bioconda -c defaults
 conda activate SnakeAltPromoter
 ```
 
@@ -48,7 +48,7 @@ pip install --user --no-cache-dir SnakeAltPromoter
 ```bash
 git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
 cd SnakeAltPromoter
-conda create -n SnakeAltPromoter -c conda-forge python
+conda create -n SnakeAltPromoter -c conda-forge python=3.13
 conda activate SnakeAltPromoter
 pip install .
 ```
