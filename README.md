@@ -33,7 +33,12 @@ Below is the schematic overview of the **SnakeAltPromoter** pipeline, as shown i
 
 ```bash
 # Create and activate environment
-conda create -n SnakeAltPromoter snakealtpromoter python=3.13 -c conda-forge -c bioconda -c defaults
+conda create -n SnakeAltPromoter \
+    snakealtpromoter \
+    python=3.13 \
+    -c conda-forge \
+    -c bioconda \
+    -c defaults
 conda activate SnakeAltPromoter
 ```
 
