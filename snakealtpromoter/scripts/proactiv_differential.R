@@ -29,7 +29,7 @@ if (length(args) < 10)
 
 out_dir      <- args[1]
 prom_rds     <- args[2] 
-samples      <- strsplit(args[3], " ")[[1]]
+samples      <- strsplit(args[3], ",")[[1]]
 conditions_str   <- args[4]
 cnt_mat_file <- args[5]  # Path to the count matrix file
 baseline_condition <- args[6]  # Baseline condition for comparison

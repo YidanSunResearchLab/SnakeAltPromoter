@@ -480,7 +480,7 @@ set.seed(40)
 cat("Input matrix for t-SNE has", nrow(tsne_df), "samples (rows)\n")
 print(rownames(tsne_df))
 # Y is a 2D matrix with t-SNE coordinates for each sample
-Y <- Rtsne(as.matrix(tsne_df[ , !names(tsne_df) %in% "Sample"]), perplexity = 1)$Y
+Y <- Rtsne(as.matrix(tsne_df[ , !names(tsne_df) %in% "Sample"]), perplexity = 5)$Y
 rownames(Y) <- rownames(tsne_df)
 print(Y)
 

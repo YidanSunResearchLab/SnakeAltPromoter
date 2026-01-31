@@ -30,12 +30,13 @@ Snakealtpromoter [options]
 ### Example
 ```bash
 Snakealtpromoter \
--i /path/to/input/fastqs/dir/ 
---sample_sheet /path/to/sample/sheet
---genome_dir /path/to/genomesetup/dir/ 
--o /path/to/output/dir/ 
+-i /mnt/citadel2/research/shared/SnakeAltPromoter_paper_revision/processed_cage/STAR/junctions
+--sample_sheet /mnt/citadel2/research/shared/SnakeAltPromoter_paper_revision/raw/cage/sampleSheet.tsv
+--genome_dir /mnt/citadel2/research/shared/SnakeAltPromoter_processed/genome
+-o /mnt/citadel2/research/shared/SnakeAltPromoter_1204/test1213
 --threads 30 
---organism hg38 
+--organism hg38
+--dry-run
 ```
 
 ### Sample Sheet

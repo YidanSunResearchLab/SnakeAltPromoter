@@ -11,7 +11,7 @@ if (length(args) < 6) {
 out_dir <- args[1]
 #counts_files  <- args[2] 
 prom_rds    <- args[2]
-samples     <- strsplit(args[3], " ")[[1]]
+samples     <- strsplit(args[3], ",")[[1]]
 conditions_str <- args[4]
 comparison <- strsplit(args[5], " ")[[1]]
 count_files <- args[6:length(args)]

@@ -25,15 +25,17 @@ if (length(args) != 4) {
 }
 out_dir <- args[1]
 promoter_rds <- args[2]
-sj_files_str <- args[3]
+sj_list_file <- args[3]
 conditions_str <- args[4]
 
 # Ensure input types are character strings
-if (!is.character(sj_files_str)) stop("`sj_files_str` must be a character string.")
+#if (!is.character(sj_files_str)) stop("`sj_files_str` must be a character string.")
 if (!is.character(conditions_str)) stop("`conditions_str` must be a character string.")
 
 # Parse file paths and conditions
-sj_files <- strsplit(sj_files_str, " ")[[1]]
+#sj_files <- strsplit(sj_files_str, " ")[[1]]
+sj_files <- readLines(sj_list_file)
+#sj_files <- sj_files[nzchar(sj_files)]
 condition <- strsplit(conditions_str, ",")[[1]]
 
 
@@ -50,6 +52,8 @@ if (length(missing_sj) > 0) {
   stop("Some SJ files do not exist.")
 }
 
+length(sj_files)
+length(condition)
 # Check consistency between SJ files and conditions
 if (length(sj_files) != length(condition)) {
   stop("Number of SJ files does not match number of conditions. Consider re-running after all SJ files are completed.")

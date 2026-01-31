@@ -22,7 +22,7 @@ if (length(args) != 9) {
 
 out_dir     <- args[1]
 prom_rds    <- args[2]
-samples     <- strsplit(args[3], " ")[[1]]
+samples     <- strsplit(args[3], ",")[[1]]
 conditions_str <- args[4]
 counts <- args[5]
 comparison <- strsplit(args[6], " ")[[1]]
@@ -39,7 +39,8 @@ condition  <- strsplit(conditions_str, ",")[[1]]
 
 cat("Samples:", paste(samples, collapse = ", "), "\n")
 cat("Conditions:", paste(condition, collapse = ", "), "\n")
-
+print(length(samples))
+print(length(condition))
 
 stopifnot(length(samples) == length(condition),
 #        dir.exists(fc_dir),
@@ -102,7 +103,11 @@ df_pos <- df_pos %>%
 # -------------------------
 message("Normalizing promoter counts...")
 cnt_mat <- readCounts   
-saveRDS(cnt_mat, file.path(out_dir, "raw_promoter_counts.rds"))      
+saveRDS(cnt_mat, file.path(out_dir, "raw_promoter_counts.rds"))
+write.table(cnt_mat,
+            gzfile(file.path(out_dir, "raw_promoter_counts.tsv.gz")),
+            sep="\t", quote=FALSE)
+
 cnt_mat[is.na(cnt_mat)] <- 0
 if (norm_method == "deseq2") {
   dds <- DESeqDataSetFromMatrix(round(cnt_mat),
@@ -111,7 +116,11 @@ if (norm_method == "deseq2") {
   dds <- DESeq(dds, quiet = TRUE)
   # Export normalized counts
   norm_counts <- counts(dds, normalized = TRUE)
-  saveRDS(norm_counts, file.path(out_dir, "normalized_promoter_counts.rds")) 
+  saveRDS(norm_counts, file.path(out_dir, "normalized_promoter_counts.rds"))
+  write.table(norm_counts,
+            gzfile(file.path(out_dir, "normalized_promoter_counts.tsv.gz")),
+            sep="\t", quote=FALSE)
+ 
   # Export size factors
   sizeFactors <- sizeFactors(dds) 
   saveRDS(sizeFactors, file.path(out_dir, "size_factors.rds"))  
@@ -247,6 +256,23 @@ se$sampleName <- colnames(se)
 
 saveRDS(se, file.path(out_dir, "Promoter_activity_SE.rds"))
 
+# summary
+sink(file.path(out_dir, "Promoter_activity_SE.summary.txt"))
+show(se)
+cat("\nassays:\n"); print(assayNames(se))
+cat("\ncolData(head):\n"); print(head(as.data.frame(colData(se))))
+cat("\nrowData(head):\n"); print(head(as.data.frame(rowData(se))))
+sink()
+
+# colData/rowData table
+write.table(as.data.frame(colData(se)),
+            file.path(out_dir, "Promoter_activity_SE.colData.tsv"),
+            sep="\t", quote=FALSE, row.names=TRUE)
+
+write.table(as.data.frame(rowData(se)),
+            file.path(out_dir, "Promoter_activity_SE.rowData.tsv"),
+            sep="\t", quote=FALSE, row.names=FALSE)
+
 
 # Set condition labels from sample names
 sample_names <- colnames(se)
@@ -350,6 +376,9 @@ for (cond in comparison) {
 # Save result files
 # -------------------------
 saveRDS(df, file.path(out_dir, "Summary_classified_rowData.rds"))
+write.table(df,
+            gzfile(file.path(out_dir, "Summary_classified_rowData.tsv.gz")),
+            sep="\t", quote=FALSE, row.names=FALSE)
 
 
 # Extract all condition from *.class and geneCategory_* columns
@@ -368,6 +397,15 @@ for (i in seq_along(cond_class_cols)) {
   minor_ids <- df$promoterId[df[[class_col]] == "Minor"]
   saveRDS(major_ids, file.path(out_dir, paste0("Major_promoterId_", cond, ".rds")))
   saveRDS(minor_ids, file.path(out_dir, paste0("Minor_promoterId_", cond, ".rds")))
+
+
+  major_ids <- as.character(major_ids)
+  minor_ids <- as.character(minor_ids)
+
+  major_ids <- major_ids[!is.na(major_ids)]
+  minor_ids <- minor_ids[!is.na(minor_ids)]
+  writeLines(major_ids, file.path(out_dir, paste0("Major_promoterId_", cond, ".txt")))
+  writeLines(minor_ids, file.path(out_dir, paste0("Minor_promoterId_", cond, ".txt")))
 
   # Save geneId lists per gene category
   gene_cat <- df[[cat_col]]
@@ -389,12 +427,18 @@ for (i in seq_along(cond_class_cols)) {
   for (catname in unique(gene_cat)) {
     gene_list <- unique(df$geneId[gene_cat == catname])
     saveRDS(gene_list, file.path(out_dir, paste0("GeneId_", catname, "_", cond, ".rds")))
+    gene_list <- as.character(gene_list)
+    gene_list <- gene_list[!is.na(gene_list)]
+    writeLines(gene_list, file.path(out_dir, paste0("GeneId_", catname, "_", cond, ".txt")))
   }
 
   # Save promoterId lists per gene category
   for (catname in unique(gene_cat)) {
     prom_list <- df$promoterId[gene_cat == catname]
     saveRDS(prom_list, file.path(out_dir, paste0("PromoterId_", catname, "_", cond, ".rds")))
+    prom_list <- as.character(prom_list)
+    prom_list <- prom_list[!is.na(prom_list)]
+    writeLines(prom_list, file.path(out_dir, paste0("PromoterId_", catname, "_", cond, ".txt")))
   }
 }
 

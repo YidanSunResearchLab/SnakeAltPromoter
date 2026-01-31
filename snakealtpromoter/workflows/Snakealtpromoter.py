@@ -9,9 +9,158 @@ import glob
 import sys
 import csv
 import shutil
+import yaml
 
 def have(cmd: str) -> bool:
     return shutil.which(cmd) is not None
+
+def detect_samples_bam(input_dir):
+    """
+    BAM-based detection for precomputed alignments.
+
+    Expected directory layout:
+
+        <input_dir>/<sample>/genome_alignments_out/
+            genome_accepted_hits.bam
+            SJ.out.tab
+
+    Returns:
+        {
+            sample_name: {
+                "bam": <path_to_genome_accepted_hits.bam>,
+                "sj":  <path_to_SJ.out.tab>,
+            },
+            ...
+        }
+    """
+    samples_detected = {}
+
+    for sample in os.listdir(input_dir):
+        sample_dir = os.path.join(input_dir, sample)
+        if not os.path.isdir(sample_dir):
+            continue
+
+        ga_dir = os.path.join(sample_dir, "genome_alignments_out")
+        if not os.path.isdir(ga_dir):
+            continue
+
+        bam_path = os.path.join(ga_dir, "genome_accepted_hits.bam")
+        bai_path = os.path.join(ga_dir, "genome_accepted_hits.bam.bai")
+        sj_path  = os.path.join(ga_dir, "SJ.out.tab")
+
+        if os.path.exists(bam_path) and os.path.exists(sj_path) and os.path.exists(bai_path):
+            samples_detected[sample] = {
+                "bam": bam_path,
+                "sj":  sj_path,
+                "bai": bai_path,
+            }
+        else:
+            print(
+                f"[WARN] sample '{sample}' is missing genome_accepted_hits.bam or SJ.out.tab or genome_accepted_hits.bam.bai; skipped.",
+                file=sys.stderr
+            )
+
+    return samples_detected
+
+
+def detect_samples_with_fallback(input_dir, reads_choice):
+    """
+    Wrapper around the original FASTQ-based detect_samples(..).
+
+    Behavior:
+      1) Try FASTQ-based detection first (original behavior).
+         - If some FASTQ samples are found, use them directly.
+         - If single-end mode raises the 'No single-end FASTQs found' error,
+           treat it as 'no FASTQ samples found' and fall back.
+      2) If no FASTQ samples are found, fall back to BAM-based detection
+         with layout:
+             <input_dir>/<sample>/genome_alignments_out/
+                 genome_accepted_hits.bam
+                 SJ.out.tab
+    """
+    # ---- Step 1: try original FASTQ detection ----
+    try:
+        fastq_samples = detect_samples(input_dir, reads_choice)
+    except ValueError as e:
+        msg = str(e)
+        # Only swallow the specific "no single-end FASTQs" error;
+        # any other ValueError should still be raised.
+        if "No single-end FASTQs found" in msg:
+            print(
+                f"[INFO] FASTQ-based detection raised '{msg}'. "
+                f"Will try BAM-based detection instead.",
+                file=sys.stderr,
+            )
+            fastq_samples = {}
+        else:
+            # Different error → propagate
+            raise
+
+    if fastq_samples:
+        print("[INFO] Detected FASTQ-based samples; using FASTQ mode.", file=sys.stderr)
+        return fastq_samples
+
+    # ---- Step 2: fall back to BAM layout ----
+    print(
+        "[INFO] No FASTQ samples found; trying BAM-based layout "
+        "under <sample>/genome_alignments_out/ ...",
+        file=sys.stderr,
+    )
+    bam_samples = detect_samples_bam(input_dir)
+
+    if not bam_samples:
+        raise ValueError(
+            f"No samples found in {input_dir} in either FASTQ mode or BAM mode.\n"
+            f"Expected either FASTQs (*.fastq.gz) or BAM layout "
+            f"<sample>/genome_alignments_out/."
+        )
+
+    print("[INFO] Detected BAM-based samples; using BAM mode.", file=sys.stderr)
+    return bam_samples
+
+def detect_samples(input_dir, reads_choice):
+    """
+    Return dict(sample -> {"R1": path, "R2": path (optional)})
+    - For paired: require SAMPLE_R1.fastq.gz and/or SAMPLE_R2.fastq.gz
+    - For single: accept SAMPLE_R1.fastq.gz OR SAMPLE.fastq.gz
+    """
+    samples_detected = {}
+
+    if reads_choice == "paired":
+        pat = re.compile(r"^(?P<sample>.+)_R(?P<read>[12])\.fastq\.gz$")
+        for fn in os.listdir(input_dir):
+            m = pat.match(fn)
+            if not m:
+                continue
+            sample = m.group("sample")
+            read   = m.group("read")
+            key    = f"R{read}"
+            samples_detected.setdefault(sample, {})[key] = os.path.join(input_dir, fn)
+        for sample, files in samples_detected.items():
+            if "R1" not in files:
+                raise ValueError(f"Sample {sample} missing R1 file.")
+            if "R2" not in files:
+                print(f"Warning: Sample {sample} missing R2 – treated as single-end.", file=sys.stderr)
+    else:  # reads_choice == "single"
+        pat_r1 = re.compile(r"^(?P<sample>.+)_R1\.fastq\.gz$")
+        pat_plain = re.compile(r"^(?P<sample>.+)\.fastq\.gz$")
+        for fn in os.listdir(input_dir):
+            m1 = pat_r1.match(fn)
+            m2 = pat_plain.match(fn) if not m1 else None
+            if not (m1 or m2):
+                continue
+            sample = (m1 or m2).group("sample")
+            # If both SAMPLE_R1.fastq.gz and SAMPLE.fastq.gz exist, prefer the explicit R1
+            cur = samples_detected.setdefault(sample, {})
+            if m1:
+                cur["R1"] = os.path.join(input_dir, fn)
+            elif "R1" not in cur:
+                cur["R1"] = os.path.join(input_dir, fn)
+        if not samples_detected:
+            raise ValueError(f"No single-end FASTQs found in {input_dir}. "
+                            f"Expect files named SAMPLE.fastq.gz or SAMPLE_R1.fastq.gz.")
+    return samples_detected
+
 
 def main():
     # Argument parser setup
@@ -35,6 +184,7 @@ def main():
     parser.add_argument("--slurm-account", default=None, help="SLURM account; passed via --default-resources slurm_account=<...>.")
     parser.add_argument("--slurm-partition", default=None, help="SLURM partition; passed via --default-resources slurm_partition=<...>.")
     parser.add_argument("--set-resources", action="append", default=[], help="Per-rule resource override like '<rule>:slurm_partition=<PART>'. Repeatable. Mirrors Snakemake docs.")
+    parser.add_argument("--star_precomputed", help="Path to precomputed STAR genome index directory.")
 
     # Parse known arguments, capturing extra Snakemake args
     args, extra_args = parser.parse_known_args()
@@ -61,6 +211,7 @@ def main():
     method = args.method
     min_pFC = args.min_pFC
     max_gFC = args.max_gFC
+    star_precomputed = args.star_precomputed
     lfcshrink = args.lfcshrink
 
     # Ensure output directory exists
@@ -94,60 +245,13 @@ def main():
             sys.exit(1)
     print("All required files found.")  # Debug
 
-
-    def detect_samples(input_dir, reads_choice):
-        """
-        Return dict(sample -> {"R1": path, "R2": path (optional)})
-        - For paired: require SAMPLE_R1.fastq.gz and/or SAMPLE_R2.fastq.gz
-        - For single: accept SAMPLE_R1.fastq.gz OR SAMPLE.fastq.gz
-        """
-        samples_detected = {}
-
-        if reads_choice == "paired":
-            pat = re.compile(r"^(?P<sample>.+)_R(?P<read>[12])\.fastq\.gz$")
-            for fn in os.listdir(input_dir):
-                m = pat.match(fn)
-                if not m:
-                    continue
-                sample = m.group("sample")
-                read   = m.group("read")
-                key    = f"R{read}"
-                samples_detected.setdefault(sample, {})[key] = os.path.join(input_dir, fn)
-
-            for sample, files in samples_detected.items():
-                if "R1" not in files:
-                    raise ValueError(f"Sample {sample} missing R1 file.")
-                if "R2" not in files:
-                    print(f"Warning: Sample {sample} missing R2 – treated as single-end.", file=sys.stderr)
-
-        else:  # reads_choice == "single"
-            pat_r1 = re.compile(r"^(?P<sample>.+)_R1\.fastq\.gz$")
-            pat_plain = re.compile(r"^(?P<sample>.+)\.fastq\.gz$")
-            for fn in os.listdir(input_dir):
-                m1 = pat_r1.match(fn)
-                m2 = pat_plain.match(fn) if not m1 else None
-                if not (m1 or m2):
-                    continue
-                sample = (m1 or m2).group("sample")
-                # If both SAMPLE_R1.fastq.gz and SAMPLE.fastq.gz exist, prefer the explicit R1
-                cur = samples_detected.setdefault(sample, {})
-                if m1:
-                    cur["R1"] = os.path.join(input_dir, fn)
-                elif "R1" not in cur:
-                    cur["R1"] = os.path.join(input_dir, fn)
-
-            if not samples_detected:
-                raise ValueError(f"No single-end FASTQs found in {input_dir}. "
-                                f"Expect files named SAMPLE.fastq.gz or SAMPLE_R1.fastq.gz.")
-
-        return samples_detected
-
-
-
     def load_sample_sheet(sample_sheet_path):
         """Return (ordered list of samples, dict(sample->condition), dict(sample->batch), dict(sample->role), test_condition: str, control_condition: str)"""
+        
         if not os.path.exists(sample_sheet_path):
             raise FileNotFoundError(f"sampleSheet.tsv not found: {sample_sheet_path}")
+        
+        sheet_name = os.path.splitext(os.path.basename(sample_sheet_path))[0]
 
         sample_order = []
         cond_map = {}
@@ -202,11 +306,21 @@ def main():
             control_condition = only_cond
             print(f"[INFO] Only one condition detected ('{only_cond}'). Differential testing will be skipped.", file=sys.stderr)
 
-        return sample_order, cond_map, batch_map, role_map, test_condition, control_condition
+        return sample_order, cond_map, batch_map, role_map, test_condition, control_condition, sheet_name
 
     # Main usage
-    #sample_sheet_path = args.sample_sheet or os.path.join(input_dir, "sampleSheet.tsv")
-    samples_detected = detect_samples(input_dir, reads_choice)
+    # sample_sheet_path = args.sample_sheet or os.path.join(input_dir, "sampleSheet.tsv")
+
+    # Use FASTQ-based detection first; if none found, fall back to BAM layout
+    samples_detected = detect_samples_with_fallback(input_dir, reads_choice)
+    EXCLUDE_SAMPLES = {"RISK_277_S88", "1075-DLPFC", "2007-DLPFC", "41_120416"}
+
+    for x in EXCLUDE_SAMPLES:
+        if x in samples_detected:
+            samples_detected.pop(x, None)
+            print(f"[INFO] Excluding sample from detection: {x}", file=sys.stderr)
+
+
 
     # Determine sample sheet path
     if args.sample_sheet:
@@ -214,54 +328,122 @@ def main():
     else:
         sample_sheet_path = os.path.join(output_dir, "samplesheet.tsv")
 
-    # Auto-generate sampleSheet if missing
+    # Auto-generate a TEMPLATE sampleSheet if missing (no grouping inferred)
     if not os.path.exists(sample_sheet_path):
         os.makedirs(os.path.dirname(sample_sheet_path), exist_ok=True)
+        detected_sorted = sorted(samples_detected.keys())
+
         with open(sample_sheet_path, "w", newline="") as tsvout:
             writer = csv.writer(tsvout, delimiter="\t")
             writer.writerow(["sampleName", "condition", "batch", "differential"])
-            for sample in sorted(samples_detected.keys()):
-                writer.writerow([sample, "wt", "batch1", "control"])
-        print(f"[INFO] Created default sample sheet at: {sample_sheet_path}", file=sys.stderr)
-        print("[INFO] Defaults used: condition=wt, batch=batch1, differential=control", file=sys.stderr)
+            for sample in detected_sorted:
+                # Template defaults: no differential plan
+                writer.writerow([sample, "overall", "batch1", "control"])
 
-    sample_order, condition_map, batch_map, role_map, test_condition, control_condition = load_sample_sheet(sample_sheet_path)
+        print(f"[INFO] Created TEMPLATE sample sheet at: {sample_sheet_path}", file=sys.stderr)
+        print("[INFO] This template disables differential by default.", file=sys.stderr)
+        print("[INFO] Provide your own sampleSheet (via --sample_sheet) with test/control + condition labels to run differential.", file=sys.stderr)
 
+    sample_order, condition_map, batch_map, role_map, test_condition, control_condition, sheet_name = load_sample_sheet(sample_sheet_path)
 
-    # Check for missing samples
+    # ---- Validate sampleSheet entries (only those listed) exist in detected samples ----
     missing = [s for s in sample_order if s not in samples_detected]
     if missing:
         raise ValueError(f"Samples in sampleSheet but not in input_dir: {missing}")
 
-    # Build ordered samples_dict with condition and batch attached
-    samples_dict = {
-        s: {
-            "R1": samples_detected[s]["R1"],
-            "R2": samples_detected[s].get("R2"),
-            "condition": condition_map[s],
-            "batch": batch_map[s],
+    # ---- Define ALL samples from detection (pipeline runs these) ----
+    all_samples = sorted(samples_detected.keys())
+
+    # ---- Define DIFF samples from sampleSheet (only these used for differential) ----
+    diff_samples = [
+        s for s in sample_order
+        if (s in samples_detected) and (role_map.get(s) in {"test", "control"})
+    ]
+
+    # Build samples_dict for ALL samples; condition/batch come from sampleSheet if present, else defaults
+    samples_dict = {}
+    for s in all_samples:
+        sd = samples_detected[s]
+
+        entry = {
+            "condition": condition_map.get(s, "overall"),
+            "batch": batch_map.get(s, "batch1"),
         }
-        for s in sample_order
-    }
 
-    # Strings to pass to R, strictly ordered by sample_order
-    conditions_str = ",".join(condition_map[s] for s in sample_order)
-    batch_str      = ",".join(batch_map[s] for s in sample_order)
+        # FASTQ mode
+        if "R1" in sd:
+            entry["R1"] = sd["R1"]
+        if "R2" in sd:
+            entry["R2"] = sd["R2"]
 
-    # Print for verification
-    print("Samples detected from directory & sampleSheet:")
-    for sample, files in samples_dict.items():
+        # BAM mode (expected from detect_samples_bam)
+        if "bam" in sd:
+            entry["bam"] = sd["bam"]
+        if "sj" in sd:
+            entry["sj"] = sd["sj"]
+        if "bai" in sd:
+            entry["bai"] = sd["bai"]
+
+        samples_dict[s] = entry
+
+    # Strings to pass to R for ALL samples (if you still need them)
+    all_conditions_str = ",".join(samples_dict[s]["condition"] for s in all_samples)
+    all_batch_str      = ",".join(samples_dict[s]["batch"] for s in all_samples)
+
+    # Strings to pass to R for DIFF samples (what differential should use)
+    diff_conditions_str = ",".join(samples_dict[s]["condition"] for s in diff_samples)
+    diff_batch_str      = ",".join(samples_dict[s]["batch"] for s in diff_samples)
+    diff_samples_str    = ",".join(diff_samples)
+
+    print("Samples detected (ALL):")
+    for s in all_samples:
+        files = samples_dict[s]
         print(
-            f"  {sample}: "
-            f"R1={files['R1']}, "
-            f"R2={files.get('R2', 'NA')}, "
+            f"  {s}: "
+            f"R1={files.get('R1','NA')}, "
+            f"R2={files.get('R2','NA')}, "
+            f"bam={files.get('bam','NA')}, "
+            f"sj={files.get('sj','NA')}, "
+            f"bai={files.get('bai','NA')}, "
             f"condition={files['condition']}, "
             f"batch={files['batch']}"
         )
 
+    print("Differential samples (DIFF subset):", diff_samples, file=sys.stderr)
+
+    # ---- Build CONFIG dict ----
+    CONFIG = {
+        "input_dir": input_dir,
+        "output_dir": output_dir,
+        "organism": organism,
+        "genome_dir": genome_dir,
+        "downsample_size": downsample_size,
+        "fastqc": fastqc,
+        "trim": trim,
+        "reads": reads,
+        "threads": threads,
+        "samples_dict": samples_dict,
+        "method": method,
+        "test_condition": test_condition,
+        "control_condition": control_condition,
+        "sheet_name": sheet_name,
+        "max_gFC": max_gFC,
+        "min_pFC": min_pFC,
+        "lfcshrink": lfcshrink,
+        "all_batch_str": all_batch_str,
+        "diff_batch_str": diff_batch_str,
+        "diff_samples_str": diff_samples_str,
+        "diff_conditions_str": diff_conditions_str,
+        "star_precomputed": args.star_precomputed,
+    }
+
+    # ---- Write CONFIG to YAML ----
+    configfile_path = os.path.join(output_dir, "Snakealtpromoter_config.yaml")
+    os.makedirs(output_dir, exist_ok=True)
+    with open(configfile_path, "w") as fh:
+        yaml.safe_dump(CONFIG, fh, sort_keys=False)
 
 
-    # Build Snakemake command
     snakemake_cmd = [
         "snakemake",
         "--snakefile", os.path.join(script_dir, "../rules/Snakealtpromoter.Snakefile"),
@@ -269,27 +451,7 @@ def main():
         "--directory", output_dir,
         "--use-conda",
         "--conda-prefix", os.path.join(genome_dir, ".snakemake_conda"),
-        "--config",
-        f"input_dir={input_dir}",
-        f"output_dir={output_dir}",
-        f"organism={organism}",
-        f"genome_dir={genome_dir}",
-        f"downsample_size={downsample_size}",
-        f"fastqc={fastqc}",
-        f"trim={trim}",
-        #f"samples={json.dumps(samples)}",
-        f"reads={json.dumps(reads)}",
-        f"threads={threads}",
-        f"samples_dict={json.dumps(samples_dict)}",
-        f"method={method}",
-        #f"reads={','.join(reads)}",
-        f"test_condition={test_condition}",
-        f"control_condition={control_condition}",
-        f"max_gFC={max_gFC}",
-        f"min_pFC={min_pFC}",
-        f"lfcshrink={lfcshrink}",
-        #f"conditions={conditions_str}",
-        f"batch={batch_str}",
+        "--configfile", configfile_path,
         "--cores", str(threads),
     ]
 

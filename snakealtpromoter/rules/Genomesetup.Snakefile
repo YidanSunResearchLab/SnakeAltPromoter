@@ -84,31 +84,29 @@ rule copy_gtf:
 
 rule copy_fasta:
     output:
-        fasta=output_dir + "/organisms/{organism}/{organism}.fa",
-        fai=output_dir + "/organisms/{organism}/{organism}.fa.fai"
+        fasta = output_dir + "/organisms/{organism}/{organism}.fa",
+        fai   = output_dir + "/organisms/{organism}/{organism}.fa.fai"
     params:
-        organism_dir=output_dir + "/organisms/{organism}",
-        fasta=organism_fasta
+        organism_dir = output_dir + "/organisms/{organism}",
+        fasta        = organism_fasta
     threads: threads
     conda: "envs/basic.yaml"
     log: "logs/copy_fasta_{organism}.log"
     benchmark: "benchmarks/copy_fasta_{organism}.bmk.txt"
     shell:
         """
-        if [ "{params.fasta}" == "" ]; then
+        if [ "{params.fasta}" = "" ]; then
             echo "Error: organism_fasta is 'NA' or not provided." >&2
             exit 1
         fi
+
         mkdir -p {params.organism_dir}
         cp {params.fasta} {output.fasta}
-        samtools faidx {output.fasta}
-        python -c "with open('{output.fai}') as f: \
-                main_chroms = [line.split()[0] for line in f if line.split()[0].startswith('chr')]; \
-                print(' '.join(main_chroms))" > {params.organism_dir}/main_chroms.txt 2>> {log}
-        samtools faidx {output.fasta} $(cat {params.organism_dir}/main_chroms.txt) > {params.organism_dir}/{wildcards.organism}_filtered.fa
-        mv {params.organism_dir}/{wildcards.organism}_filtered.fa {output.fasta}
+
+        # Just index, do NOT rename or filter chromosome names here
         samtools faidx {output.fasta}
         """
+
 
 rule generate_chrom_sizes:
     input:
@@ -271,6 +269,7 @@ rule gtf_to_files:
             exit 1
         fi
         """)
+
 
 rule prepare_promoter_annotation:
     input:

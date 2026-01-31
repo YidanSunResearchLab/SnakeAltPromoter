@@ -117,26 +117,18 @@ saveRDS(deseq_deg, file.path(out_dir, "Promoter_differential_activity_FDR0_05.rd
 cat("Number of differential promoters unfiltered:", nrow(act_tab), "\n")
 cat("Number of differential promoters with FDR<0.05:", nrow(deseq_deg), "\n")
 
-comparison_label <- paste0(comparison_condition, "_vs_", baseline_condition)
-archive_dir <- file.path(out_dir, "comparisons_", comparison_label)
-dir.create(archive_dir, recursive = TRUE, showWarnings = FALSE)
-file.copy(
-  from = file.path(out_dir, "Promoter_differential_activity.rds"),
-  to   = file.path(archive_dir, "Promoter_differential_activity.rds"),
-  overwrite = TRUE
-)
-file.copy(
-  from = file.path(out_dir, "Promoter_differential_activity_FDR0_05.rds"),
-  to   = file.path(archive_dir, "Promoter_differential_activity_FDR0_05.rds"),
-  overwrite = TRUE
-)
-
 ## ---------------------------------------
 ## Differential promoter usage with proActiv (multi-promoter only)
 ## ---------------------------------------
 se <- readRDS(se_file)
 # example: keep only A and B
 se <- se[, se$condition %in% c(comparison_condition, baseline_condition)]
+cat("==== DEBUG conditions in se ====\n")
+print(colnames(SummarizedExperiment::colData(se)))
+print(unique(as.character(SummarizedExperiment::colData(se)$condition)))
+print(levels(factor(SummarizedExperiment::colData(se)$condition)))
+cat("referenceCondition =", comparison_condition, "\n")
+cat("trim(referenceCondition) =", trimws(comparison_condition), "\n")
 
 cat("Running getAlternativePromoters with default promoterFC = 2.0, geneFC = 1.5. \n")
 
@@ -152,11 +144,6 @@ cat(sprintf("Number of upregulated promoters for promoterFC = 2.0 & geneFC = 1.5
 cat(sprintf("Number of downregulated promoters for promoterFC = 2.0 & geneFC = 1.5: %d \n", down_count))
 outfile <- file.path(out_dir, sprintf("Differential_promoter_usage_pFC2_gFC1_5.rds"))
 saveRDS(alt, outfile)
-file.copy(
-  from = file.path(out_dir, sprintf("Differential_promoter_usage_pFC2_gFC1_5.rds")),
-  to   = file.path(archive_dir, sprintf("Differential_promoter_usage_pFC2_gFC1_5.rds")),
-  overwrite = TRUE
-)
 
 # Run getAlternativePromoters
 if (pFC_raw != 2.0 & gFC_raw != 1.5) {
@@ -178,12 +165,6 @@ if (pFC_raw != 2.0 & gFC_raw != 1.5) {
               pFC, gFC, down_count))
   outfile <- file.path(out_dir, sprintf("Differential_promoter_usage_pFC%.2f_gFC%.2f.rds", pFC, gFC))
   saveRDS(alt, outfile)
-  file.copy(
-    from = file.path(out_dir, sprintf("Differential_promoter_usage_pFC%.2f_gFC%.2f.rds", pFC, gFC)),
-    to   = file.path(archive_dir, sprintf("Differential_promoter_usage_pFC%.2f_gFC%.2f.rds", pFC, gFC)),
-    overwrite = TRUE
-  )
-
 
 } else {
 
@@ -194,14 +175,7 @@ if (pFC_raw != 2.0 & gFC_raw != 1.5) {
   )
 
   thresholds <- list(
-    c(1.3, 1.1),
-    c(1.5, 1.3),
-    c(1.8, 1.5),
-    c(2.2, 2.0),
-    c(2.5, 2.0),
-    c(3.0, 2.5),
-    c(3.5, 3.0),
-    c(4.0, 3.9)
+    c(3.5, 3.0)
   )
 
   for (th in thresholds) {
@@ -221,12 +195,6 @@ if (pFC_raw != 2.0 & gFC_raw != 1.5) {
               pFC, gFC, down_count))
   outfile <- file.path(out_dir, sprintf("Differential_promoter_usage_pFC%.2f_gFC%.2f.rds", pFC, gFC))
   saveRDS(alt, outfile)
-  file.copy(
-    from = file.path(out_dir, sprintf("Differential_promoter_usage_pFC%.2f_gFC%.2f.rds", pFC, gFC)),
-    to   = file.path(archive_dir, sprintf("Differential_promoter_usage_pFC%.2f_gFC%.2f.rds", pFC, gFC)),
-    overwrite = TRUE
-  )
-  cat("\n")
   }
 
 }
