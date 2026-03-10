@@ -66,6 +66,14 @@ Snakealtpromoter --help
 
 If successful, usage instructions and command-line options will be displayed.
 
+### Supported environments
+
+SnakeAltPromoter has been tested on:
+- Linux (x86_64)
+- macOS (arm64 / Apple Silicon)
+- HPC cluster environments
+
+
 ---
 
 ## 🖥️ Optional: Launch GUI
@@ -89,9 +97,10 @@ Example RNA-seq data are available in the `snakealtpromoter/data/` directory.
 git clone https://github.com/YidanSunResearchLab/SnakeAltPromoter.git
 cd SnakeAltPromoter
 Genomesetup \
-  --organism hg38 \
+  --organism Homo_sapiens \
   --organism_fasta "$(pwd)/snakealtpromoter/data/hg38.fa" \
   --genes_gtf "$(pwd)/snakealtpromoter/data/hg38.gtf" \
+  --main_chr_file "$(pwd)/snakealtpromoter/data/hg38.chr.txt" \
   -o ./genome \
   --threads 30
 ```
@@ -106,7 +115,7 @@ Snakealtpromoter \
   --genome_dir "$(pwd)/genome" \
   -o test_output \
   --threads 30 \
-  --organism hg38 --trim \
+  --organism Homo_sapiens --trim \
   --sample_sheet "$(pwd)/snakealtpromoter/data/samplesheet/samplesheet.tsv"
 ```
 
@@ -129,9 +138,10 @@ To reproduce analyses in the **SnakeAltPromoter** manuscript:
 
 ```bash
 Genomesetup \
-  --organism hg38 \
+  --organism Homo_sapiens \
   --organism_fasta /Absolute/path/to/genome.fa \
   --genes_gtf /Absolute/path/to/genes.gtf \
+  --main_chr_file /Absolute/path/to/main.chr.txt \
   -o /Absolute/path/to/genome \
   --threads 30
 ```
@@ -146,7 +156,7 @@ Snakealtpromoter \
   --genome_dir /Absolute/path/to/genome \
   -o heart_RNAseq_output \
   --threads 30 \
-  --organism hg38 --trim \
+  --organism Homo_sapiens --trim \
   --sample_sheet "$(pwd)/snakealtpromoter/data/samplesheet/Heart_RNAseq.tsv"
 ```
 
@@ -160,7 +170,7 @@ Snakealtpromoter \
   --genome_dir /Absolute/path/to/genome \
   -o heart_CAGE_output \
   --threads 30 \
-  --organism hg38 \
+  --organism Homo_sapiens \
   --sample_sheet "$(pwd)/snakealtpromoter/data/samplesheet/Heart_CAGE.tsv" \
   --method cage --reads single
 ```
@@ -184,9 +194,10 @@ Prepare genome indices and promoter annotations:
 
 ```bash
 Genomesetup \
-  --organism hg38 \
+  --organism Homo_sapiens \
   --organism_fasta /Absolute/path/to/genome.fa \
   --genes_gtf /Absolute/path/to/genes.gtf \
+  --main_chr_file /Absolute/path/to/main.chr.txt \
   -o /Absolute/path/to/genome \
   --threads 30
 ```
@@ -201,7 +212,7 @@ Snakealtpromoter \
   --genome_dir /Absolute/path/to/genome \
   -o ./output/ \
   --threads 30 \
-  --organism hg38 --trim \
+  --organism Homo_sapiens --trim \
   --sample_sheet /Absolute/path/to/samplesheet.tsv \
   --method cage --reads single   # Add these only for CAGE data
 ```
@@ -213,10 +224,22 @@ For detailed documentation, see:
 
 ---
 
-## 🤝 Contributing
+## 🛠 Maintenance and Support
 
-Contributions are welcome!
-Please open an issue or submit a pull request via [GitHub](https://github.com/YidanSunResearchLab/SnakeAltPromoter).
+SnakeAltPromoter is actively maintained by the Sun Lab. We are committed to maintaining and improving the software.
+
+Maintenance activities include:
+- Updating software dependencies
+- Fixing reported bugs
+- Improving compatibility with new systems and sequencing technologies
+- Implementing usability improvements when appropriate
+
+We also welcome community contributions. Users are encouraged to:
+- Report issues via the GitHub **Issues** page
+- Suggest new features
+- Contribute improvements through **Pull Requests**
+
+While we aim to maintain long-term support for SnakeAltPromoter, development priorities may evolve as the software and research needs grow.
 
 ---
 

@@ -1,6 +1,3 @@
-
-#/genome/.snakemake_conda/671ce29470b1e8f250516402ed04d982_
-
 # ---------------------------
 # Plot: feature counts and no intron
 # ---------------------------
