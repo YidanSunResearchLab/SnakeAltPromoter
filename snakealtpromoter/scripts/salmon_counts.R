@@ -38,49 +38,13 @@ dir.create(output_dir, showWarnings = FALSE, recursive = TRUE)
 # Read promoter annotations
 promoterAnnotationData <- readRDS(promoter_rds)
 # Use @ to access slot in S4 class. Convert to data frame
-tx2promoter <- as.data.frame(promoterAnnotationData@promoterIdMapping)
-# Extract transcript name to promoter id mapping
-tx2promoter <- tx2promoter[, c("transcriptName", "promoterId")]
-
-
-# ---- Detect transcripts with multiple versions in annotation ----
-tx2promoter_versions_checked <- as.data.frame(promoterAnnotationData@promoterIdMapping)
-
-# Extract transcript base and version
-tx2promoter_versions_checked <- tx2promoter_versions_checked %>%
-  mutate(
-    transcript_base = sub("\\..*", "", transcriptName),
-    version = suppressWarnings(as.integer(sub(".*\\.", "", transcriptName)))
-  )
-
-# Only keep the latest version of each transcript base
-tx2promoter_versions_checked <- tx2promoter_versions_checked %>%
-  group_by(transcript_base) %>%
-  filter(version == max(version, na.rm = TRUE)) %>%
-  ungroup()
-tx2promoter <- tx2promoter_versions_checked[, c("transcriptName", "promoterId")]
-
-# Number of versions per base
-version_count_per_base <- tx2promoter_versions_checked %>%
-  group_by(transcript_base) %>%
-  summarise(n_versions = n_distinct(version), .groups = "drop") %>%
-  filter(n_versions > 1)
-
-# Warning if multiple versions of the same transcript is present
-if (nrow(version_count_per_base) > 0) {
-  warning("The annotation contains multiple versions of the same transcript base.\n",
-          "Deduplicated by using the newest version.\n",
-          "Affected transcript bases (up to 5 shown): ",
-          paste(head(version_count_per_base$transcript_base, 5), collapse = ", "), " ...")
-}
-
-#------------------------------------------
-
-
-# Rename column names and remove version numbers for transcript
-colnames(tx2promoter) <- c("TXNAME", "PROMOTERID")
-tx2promoter$TXNAME <- sub("\\..*", "", tx2promoter$TXNAME)
-
+tx2promoter <- as.data.frame(promoterAnnotationData@promoterIdMapping) %>%
+  dplyr::filter(!is.na(transcriptName), transcriptName != "") %>%
+  dplyr::transmute(
+    TXNAME = sub("\\..*$", "", transcriptName),
+    PROMOTERID = as.character(promoterId)
+  ) %>%
+  dplyr::distinct(TXNAME, PROMOTERID)
 # Import Salmon quantification
 # Return transcript-level counts and ignores version number in transcripts
 txi <- tximport(

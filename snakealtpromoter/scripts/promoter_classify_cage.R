@@ -39,7 +39,8 @@ condition  <- strsplit(conditions_str, ",")[[1]]
 
 cat("Samples:", paste(samples, collapse = ", "), "\n")
 cat("Conditions:", paste(condition, collapse = ", "), "\n")
-
+print(length(samples))
+print(length(condition))
 
 stopifnot(length(samples) == length(condition),
 #        dir.exists(fc_dir),
@@ -54,13 +55,6 @@ prom_anno <- readRDS(prom_rds)
 print(sum(rownames(readCounts) %in% mcols(promoterCoordinates(prom_anno))$promoterId))
 print(nrow(readCounts))
 print(length(mcols(promoterCoordinates(prom_anno))$promoterId))
-
-anno_ids <- as.character(mcols(promoterCoordinates(prom_anno))$promoterId)
-read_ids <- rownames(readCounts)
-missing_ids <- setdiff(read_ids, anno_ids)
-cat("Number of missing promoterId in annotation:", length(missing_ids), "\n")
-head(missing_ids,20)
-
 
 # Update promoterCoordinates to keep only external promoters
 message("Filtering internal promoters...")
@@ -109,7 +103,11 @@ df_pos <- df_pos %>%
 # -------------------------
 message("Normalizing promoter counts...")
 cnt_mat <- readCounts   
-saveRDS(cnt_mat, file.path(out_dir, "raw_promoter_counts.rds"))      
+saveRDS(cnt_mat, file.path(out_dir, "raw_promoter_counts.rds"))
+write.table(cnt_mat,
+            gzfile(file.path(out_dir, "raw_promoter_counts.tsv.gz")),
+            sep="\t", quote=FALSE)
+
 cnt_mat[is.na(cnt_mat)] <- 0
 if (norm_method == "deseq2") {
   dds <- DESeqDataSetFromMatrix(round(cnt_mat),
@@ -118,7 +116,11 @@ if (norm_method == "deseq2") {
   dds <- DESeq(dds, quiet = TRUE)
   # Export normalized counts
   norm_counts <- counts(dds, normalized = TRUE)
-  saveRDS(norm_counts, file.path(out_dir, "normalized_promoter_counts.rds")) 
+  saveRDS(norm_counts, file.path(out_dir, "normalized_promoter_counts.rds"))
+  write.table(norm_counts,
+            gzfile(file.path(out_dir, "normalized_promoter_counts.tsv.gz")),
+            sep="\t", quote=FALSE)
+ 
   # Export size factors
   sizeFactors <- sizeFactors(dds) 
   saveRDS(sizeFactors, file.path(out_dir, "size_factors.rds"))  
@@ -228,8 +230,6 @@ head(gene_mat)
 cat("rel_mat: ", dim(rel_mat), "\n")
 head(rel_mat)
 
-
-condition_overall <- rep("overall", length(condition))
 se <- SummarizedExperiment(
   assays = list(
     promoterCounts            = cnt_mat,
@@ -247,8 +247,7 @@ se <- SummarizedExperiment(
   ),
   
   colData = DataFrame(
-    original_condition = condition,  # retain original condition
-    condition          = condition_overall,  # used for classification
+    condition = condition,
     row.names = colnames(cnt_mat)
   )
 )
@@ -257,14 +256,30 @@ se$sampleName <- colnames(se)
 
 saveRDS(se, file.path(out_dir, "Promoter_activity_SE.rds"))
 
+# summary
+sink(file.path(out_dir, "Promoter_activity_SE.summary.txt"))
+show(se)
+cat("\nassays:\n"); print(assayNames(se))
+cat("\ncolData(head):\n"); print(head(as.data.frame(colData(se))))
+cat("\nrowData(head):\n"); print(head(as.data.frame(rowData(se))))
+sink()
+
+# colData/rowData table
+write.table(as.data.frame(colData(se)),
+            file.path(out_dir, "Promoter_activity_SE.colData.tsv"),
+            sep="\t", quote=FALSE, row.names=TRUE)
+
+write.table(as.data.frame(rowData(se)),
+            file.path(out_dir, "Promoter_activity_SE.rowData.tsv"),
+            sep="\t", quote=FALSE, row.names=FALSE)
+
 
 # Set condition labels from sample names
 sample_names <- colnames(se)
 #condition <- condition
 
 # Collapse samples to per-condition averages and classify promoter status
-#se_sum <- proActiv:::summarizeAcrossCondition(se, condition)
-se_sum <- proActiv:::summarizeAcrossCondition(se, se$condition)
+se_sum <- proActiv:::summarizeAcrossCondition(se, condition)
 
 df <- as.data.frame(rowData(se_sum))
 saveRDS(df, file.path(out_dir, "Summary_classified.rds"))
@@ -281,7 +296,7 @@ invisible(lapply(class_cols, function(col) {
 # -------------------------
 # Fix low-expression Major promoters (< 0.25) to Inactive before gene classification
 # -------------------------
-comparison <- "overall" 
+comparison <- make.names(comparison) 
 message("Fixing major promoters...")
 cat("Available columns:", colnames(df), "\n")
 cat("Comparison values:", comparison, "\n")
@@ -315,6 +330,7 @@ for (cond in comparison) {
   df[[class_col]][sel] <- "Inactive"
 }
 
+
 #rowData(se_sum) <- df
 message("Before:", class(rowData(se_sum)))
 message("After:", class(df)) 
@@ -327,54 +343,53 @@ for (cond in comparison) {
 }
 
 
-#message("Re-classifying borderline Inactive promoters (mean in [0.10, 0.25]) ...")
+message("Re-classifying borderline Inactive promoters (mean in [0.10, 0.25]) ...")
 
-#low_lo <- 0.10
-#low_hi <- 0.25
-#gene_col <- "geneId"
+low_lo <- 0.10
+low_hi <- 0.25   # CLOSED interval
+gene_col <- "geneId"
 
-#for (cond in comparison) {
+for (cond in comparison) {
 
-#  class_col <- paste0(cond, ".class")
-#  mean_col  <- paste0(cond, ".mean")
+  class_col <- paste0(cond, ".class")
+  mean_col  <- paste0(cond, ".mean")
 
-#  df[[class_col]] <- as.character(df[[class_col]])
-#  mean_v <- df[[mean_col]]
+  df[[class_col]] <- as.character(df[[class_col]])
+  mean_v <- df[[mean_col]]
 
   # CLOSED interval
-#  cand <- df[[class_col]] == "Inactive" &
-#          is.finite(mean_v) &
-#          mean_v >= low_lo & mean_v <= low_hi &
-#          !is.na(df[[gene_col]])
+  cand <- df[[class_col]] == "Inactive" &
+          is.finite(mean_v) &
+          mean_v >= low_lo & mean_v <= low_hi &
+          !is.na(df[[gene_col]])
 
-#  if (!any(cand)) next
+  if (!any(cand)) next
 
   # Does gene already have a Major?
-#  has_major_by_gene <- tapply(df[[class_col]] == "Major",
-#                              df[[gene_col]],
-#                              any, na.rm = TRUE)
+  has_major_by_gene <- tapply(df[[class_col]] == "Major",
+                              df[[gene_col]],
+                              any, na.rm = TRUE)
 
-#  cand_genes <- unique(df[[gene_col]][cand])
-#  genes_with_major <- cand_genes[has_major_by_gene[cand_genes] %in% TRUE]
-#  genes_no_major   <- setdiff(cand_genes, genes_with_major)
+  cand_genes <- unique(df[[gene_col]][cand])
+  genes_with_major <- cand_genes[has_major_by_gene[cand_genes] %in% TRUE]
+  genes_no_major   <- setdiff(cand_genes, genes_with_major)
 
   # If gene already has Major -> all borderline become Minor
-#  if (length(genes_with_major) > 0) {
-#    idx <- cand & df[[gene_col]] %in% genes_with_major
-#    df[[class_col]][idx] <- "Minor"
-#  }
+  if (length(genes_with_major) > 0) {
+    idx <- cand & df[[gene_col]] %in% genes_with_major
+    df[[class_col]][idx] <- "Minor"
+  }
 
   # If gene has no Major -> top mean becomes Major
-#  if (length(genes_no_major) > 0) {
-#    for (g in genes_no_major) {
-#      idx_g <- which(cand & df[[gene_col]] == g)
-#      best  <- idx_g[which.max(df[[mean_col]][idx_g])]
-#      df[[class_col]][idx_g] <- "Minor"
-#      df[[class_col]][best]  <- "Major"
-#    }
-#  }
-#}
-
+  if (length(genes_no_major) > 0) {
+    for (g in genes_no_major) {
+      idx_g <- which(cand & df[[gene_col]] == g)
+      best  <- idx_g[which.max(df[[mean_col]][idx_g])]
+      df[[class_col]][idx_g] <- "Minor"
+      df[[class_col]][best]  <- "Major"
+    }
+  }
+}
 # -------------------------
 # Classify genes based on promoter class
 # -------------------------
@@ -414,10 +429,14 @@ for (cond in comparison) {
   print(promoter_count_per_category)
 }
 
+
 # -------------------------
 # Save result files
 # -------------------------
 saveRDS(df, file.path(out_dir, "Summary_classified_rowData.rds"))
+write.table(df,
+            gzfile(file.path(out_dir, "Summary_classified_rowData.tsv.gz")),
+            sep="\t", quote=FALSE, row.names=FALSE)
 
 
 # Extract all condition from *.class and geneCategory_* columns
@@ -436,6 +455,15 @@ for (i in seq_along(cond_class_cols)) {
   minor_ids <- df$promoterId[df[[class_col]] == "Minor"]
   saveRDS(major_ids, file.path(out_dir, paste0("Major_promoterId_", cond, ".rds")))
   saveRDS(minor_ids, file.path(out_dir, paste0("Minor_promoterId_", cond, ".rds")))
+
+
+  major_ids <- as.character(major_ids)
+  minor_ids <- as.character(minor_ids)
+
+  major_ids <- major_ids[!is.na(major_ids)]
+  minor_ids <- minor_ids[!is.na(minor_ids)]
+  writeLines(major_ids, file.path(out_dir, paste0("Major_promoterId_", cond, ".txt")))
+  writeLines(minor_ids, file.path(out_dir, paste0("Minor_promoterId_", cond, ".txt")))
 
   # Save geneId lists per gene category
   gene_cat <- df[[cat_col]]
@@ -457,12 +485,18 @@ for (i in seq_along(cond_class_cols)) {
   for (catname in unique(gene_cat)) {
     gene_list <- unique(df$geneId[gene_cat == catname])
     saveRDS(gene_list, file.path(out_dir, paste0("GeneId_", catname, "_", cond, ".rds")))
+    gene_list <- as.character(gene_list)
+    gene_list <- gene_list[!is.na(gene_list)]
+    writeLines(gene_list, file.path(out_dir, paste0("GeneId_", catname, "_", cond, ".txt")))
   }
 
   # Save promoterId lists per gene category
   for (catname in unique(gene_cat)) {
     prom_list <- df$promoterId[gene_cat == catname]
     saveRDS(prom_list, file.path(out_dir, paste0("PromoterId_", catname, "_", cond, ".rds")))
+    prom_list <- as.character(prom_list)
+    prom_list <- prom_list[!is.na(prom_list)]
+    writeLines(prom_list, file.path(out_dir, paste0("PromoterId_", catname, "_", cond, ".txt")))
   }
 }
 
@@ -471,6 +505,8 @@ for (i in seq_along(cond_class_cols)) {
 # Call dexseq_fit2.R and pass arguments
 # -------------------------
 
+message("getwd() = ", getwd())
+message("fit_script = ", fit_script, " ; exists = ", file.exists(fit_script))
 
 system2("Rscript", args = c(
     fit_script, 

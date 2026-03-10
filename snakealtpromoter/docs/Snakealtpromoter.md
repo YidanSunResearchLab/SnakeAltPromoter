@@ -14,7 +14,7 @@ Snakealtpromoter [options]
 - `-i/--input_dir`: Directory containing FASTQ gz files.
 - `--sample_sheet`: Path to sample sheet.
 - `-o/--output_dir`: Output directory.
-- `--organism`: Genome assembly, the same as Genomesetup step (e.g., `hg38`).
+- `--organism`: Genome assembly, the same as Genomesetup step (e.g., `Homo_sapiens`).
 - `--genome_dir`: Directory from Genomesetup step (e.g., `/abs/path/to/genome`).
 
 
@@ -27,16 +27,16 @@ Snakealtpromoter [options]
 - `--max_gFC`: Additional threshold of maximum fold change of gene expression for a promoter to be considered alternative promoter (default 1.5). 
 
 
-### Example
+### Run:
 ```bash
 Snakealtpromoter \
--i /mnt/citadel2/research/shared/SnakeAltPromoter_paper_revision/processed_cage/STAR/junctions
---sample_sheet /mnt/citadel2/research/shared/SnakeAltPromoter_paper_revision/raw/cage/sampleSheet.tsv
---genome_dir /mnt/citadel2/research/shared/SnakeAltPromoter_processed/genome
--o /mnt/citadel2/research/shared/SnakeAltPromoter_1204/test1213
---threads 30 
---organism hg38
---dry-run
+  -i /Absolute/path/to/input_fastqs/ \
+  --genome_dir /Absolute/path/to/genome \
+  -o ./output/ \
+  --threads 30 \
+  --organism Homo_sapiens --trim \
+  --sample_sheet /Absolute/path/to/samplesheet.tsv \
+  --method cage --reads single   # Add these only for CAGE data
 ```
 
 ### Sample Sheet

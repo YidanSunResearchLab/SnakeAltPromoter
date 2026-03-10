@@ -142,91 +142,135 @@ make_plots <- function(cl) {
 # The percentage of total promoter positions larger than 1 out of all promoter positions is labelled at the top of the bar.
 
   plot_position_category <- function() {
+
     message("Generating promoter position category plot...")
-    # Cap promoter positions greater than 5 as 5. Further promoter counts are usually not large so could be grouped.
+
+    # Cap promoter positions >5
     rowData$promoterPosition <- ifelse(rowData$promoterPosition > 5, 5, rowData$promoterPosition)
-    # Filter to include only active promoters (Major and Minor)
+
+    # Filter active promoters
     filtered <- rowData[rowData[[col_class]] %in% c("Major", "Minor"), ]
-    # Count promoters per position and class
-    # position_counts has three columns: Position (1 to 5), Type (Major or Minor), and Freq (number of promoters).
+
+    # Ensure all positions exist (1-5)
+    filtered$promoterPosition <- factor(filtered$promoterPosition, levels = 1:5)
+
+    # Count promoters per position/type
     position_counts <- as.data.frame(table(
       Position = filtered$promoterPosition,
-      Type = filtered[[col_class]]))
-    # Set factor levels for plotting order
-    # Bar will be stacked with 1 to 5 from left to right; descending from major to minor.
-    position_counts$Position <- factor(position_counts$Position, levels = 1:5)
+      Type = filtered[[col_class]]
+    ))
+
     position_counts$Type <- factor(position_counts$Type, levels = c("Major", "Minor"))
-    # Convert counts to wide format (row = Type, columns = Position) to calculate total counts per position and bar widths.
-    # plot_data has two columns: Type (Major or Minor); Position (1 to 5) as column names; counts as values.
-    # Fill missing positions with 0 counts to prevent NA
-    plot_data <- tidyr::pivot_wider(position_counts, names_from = Position, values_from = Freq, values_fill = 0)
-    # may return a tibble with character columns, and ggplot2 might fail to match character values to factor levels in scale_fill_manual().
-    # This can lead to incorrect coloring (e.g., all gray bars) and a legend labeled "NA".
-    # Converting to data.frame ensures compatibility with factor-based fill mappings.
+
+    # Wide format
+    plot_data <- tidyr::pivot_wider(
+      position_counts,
+      names_from = Position,
+      values_from = Freq,
+      values_fill = 0
+    )
+
     plot_data <- as.data.frame(plot_data)
+
     rownames(plot_data) <- plot_data$Type
-    # Remove the Type column, only keeping values.
     plot_data <- plot_data[, -1]
-    # Add Type as a normal column for ggplot, because it needs an explicit column.
+
     plot_data$Type <- rownames(plot_data)
-    # Reshape back to long format for ggplot.
-    # Type as grouping variable, Position as variable, Count as value.
-    plot_data_melt <- reshape2::melt(plot_data, id.vars = "Type", variable.name = "Position", value.name = "Count")
-    # Ensure order of Type and Position for plotting
+
+    # Long format
+    plot_data_melt <- reshape2::melt(
+      plot_data,
+      id.vars = "Type",
+      variable.name = "Position",
+      value.name = "Count"
+    )
+
     plot_data_melt$Type <- factor(plot_data_melt$Type, levels = c("Major", "Minor"))
     plot_data_melt$Position <- factor(plot_data_melt$Position, levels = as.character(1:5))
-    # Compute bar widths and center positions based on total counts.
-    # This step is necessary to ensure bar labels match with bar positions, 
-    # given the bar widths are proportional to the number of promoters, which differs for each position.
-    barwidth <- plot_data_melt %>% group_by(Position) %>% summarise(total = sum(Count)) %>%
-    # Calculate the right side of bar and minus half to get the center position.
-      mutate(width = log10(total / sum(total) * 100), center = cumsum(width) - width / 2)
-    # Merge back to main data for plotting
-    # plot_data_melt has position, type, and count; barwidth has total, width, center for each position
-    # Every merge stack will have count, width, and center position.
+
+    # Compute bar width
+    barwidth <- plot_data_melt %>%
+      dplyr::group_by(Position) %>%
+      dplyr::summarise(total = sum(Count), .groups = "drop") %>%
+      dplyr::mutate(
+        width = log10((total + 1) / sum(total + 1) * 100),  # avoid log10(0)
+        center = cumsum(width) - width / 2
+      )
+
+    # Merge for plotting
     plot_data_final <- merge(plot_data_melt, barwidth, by = "Position") %>%
-      # Sum at each position; stack from the descending sequence of major at the bottom.
-      group_by(Position) %>% arrange(desc(Type)) %>%
-      # prop is the proportion of count out of all, which corresponds to the height of the bar segment since max is 1.
-      # ypos centerizes text label, which is the cumulative proportion minus half of the proportion of the segment.
-      mutate(prop = Count / sum(Count), ypos = cumsum(prop) - prop / 2)
-    # Set levels for the factor Type to ensure Major and minor are colored/
+      dplyr::group_by(Position) %>%
+      dplyr::arrange(desc(Type)) %>%
+      dplyr::mutate(
+        prop = Count / sum(Count),
+        ypos = cumsum(prop) - prop / 2
+      )
+
     plot_data_final$Type <- factor(plot_data_final$Type, levels = c("Major", "Minor"))
-    # Compute percentage out of all promoters for promoter counts after position 1
+
     pct <- round(sum(barwidth$total[2:5]) / sum(barwidth$total) * 100)
 
-    # Generate stacked bar plot
+    # x-axis labels dynamic
+    x_labels <- as.character(barwidth$Position)
+    x_labels[x_labels == "5"] <- ">=5"
+
     ggplot(plot_data_final,
-           aes(x = center, y = prop, fill = Type, width = width)) +
+          aes(x = center, y = prop, fill = Type, width = width)) +
       geom_col(position = "stack", colour = "black") +
-      # Add white count labels on top of each stacked bar
-      # Adjusted y position to be slightly below the bar top
-      geom_text(data = barwidth, inherit.aes = FALSE,
-                aes(x = center, y = 0.97, label = comma(total)),
-                colour = "white", size = 1.8, fontface = "bold", vjust = 0) +
-      # Draw a horizontal segment over positions 2-5, adjust y position to be slightly above the bar top.
-      annotate("segment", x = barwidth$center[2] - barwidth$width[2]/2,
-               xend = barwidth$center[5] + barwidth$width[5]/2,
-               y = 1.07, yend = 1.07, size = 0.3) +
-      # Add percentage label above the segment, adjust y position to be slightly above the segment.
-      annotate("text", x = mean(barwidth$center[2:5]), y = 1.11,
-               label = paste0(pct, "%"), fontface = "bold") +
-      # Format y axis with % labels, expand to let the graph not touch y axis.
-      scale_y_continuous(breaks = seq(0, 1, 0.2),
-                         labels = paste0(seq(0, 100, 20), "%"),
-                         expand = c(0, 0.18)) +
-      # Format x axis with custom widths and center labels, mult to let graph not touch x axis.
-      scale_x_continuous(breaks = barwidth$center,
-                         labels = c("1", "2", "3", "4", ">=5"),
-                         expand = expansion(mult = c(0.05, 0.05))) +
-      # Assign fill colors for promoter types
+
+      geom_text(
+        data = barwidth,
+        inherit.aes = FALSE,
+        aes(x = center, y = 0.97, label = scales::comma(total)),
+        colour = "white",
+        size = 1.8,
+        fontface = "bold",
+        vjust = 0
+      ) +
+
+      annotate(
+        "segment",
+        x = barwidth$center[2] - barwidth$width[2] / 2,
+        xend = barwidth$center[5] + barwidth$width[5] / 2,
+        y = 1.07,
+        yend = 1.07,
+        linewidth = 0.3
+      ) +
+
+      annotate(
+        "text",
+        x = mean(barwidth$center[2:5]),
+        y = 1.11,
+        label = paste0(pct, "%"),
+        fontface = "bold"
+      ) +
+
+      scale_y_continuous(
+        breaks = seq(0, 1, 0.2),
+        labels = paste0(seq(0, 100, 20), "%"),
+        expand = c(0, 0.18)
+      ) +
+
+      scale_x_continuous(
+        breaks = barwidth$center,
+        labels = x_labels,
+        expand = expansion(mult = c(0.05, 0.05))
+      ) +
+
       scale_fill_manual(values = c("Major" = "#ff1e56", "Minor" = "#ffac41")) +
-      # Set coordinate limits and axis clipping, so that the segment and percentage labels above the bars are not clipped.
+
       coord_cartesian(ylim = c(0, 1.12), clip = "off") +
-      labs(x = expression("Promoter position (5'" %->% "3')"),
-           y = "Proportion of promoter types") +
+
+      labs(
+        x = expression("Promoter position (5'" %->% "3')"),
+        y = "Proportion of promoter types"
+      ) +
+
       plot_theme +
-      theme(legend.title = element_blank(), plot.margin = margin(6, 6, 6, 6))
+      theme(
+        legend.title = element_blank(),
+        plot.margin = margin(6, 6, 6, 6)
+      )
   }
 
   # Plot 4: promoter_activity_geneexpression_correlation---------------------------------------
@@ -480,7 +524,7 @@ set.seed(40)
 cat("Input matrix for t-SNE has", nrow(tsne_df), "samples (rows)\n")
 print(rownames(tsne_df))
 # Y is a 2D matrix with t-SNE coordinates for each sample
-Y <- Rtsne(as.matrix(tsne_df[ , !names(tsne_df) %in% "Sample"]), perplexity = 5)$Y
+Y <- Rtsne(as.matrix(tsne_df[ , !names(tsne_df) %in% "Sample"]), perplexity = 1)$Y
 rownames(Y) <- rownames(tsne_df)
 print(Y)
 

@@ -6,7 +6,7 @@ dependencies:
   #did not include python because it is easy in conflict
   - salmon==1.10.3
   - fastqc=0.12.1
-  - seqtk                 # downsample
+  - seqtk=1.5                 # downsample
   - trim-galore==0.6.10
   - cutadapt==5.1
 

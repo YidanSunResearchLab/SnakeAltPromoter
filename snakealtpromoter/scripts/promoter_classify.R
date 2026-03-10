@@ -321,6 +321,13 @@ for (cond in comparison) {
   sel[is.na(sel)] <- TRUE
   print(sum(sel))
   df[[class_col]][sel] <- "Inactive"
+
+  cat("Number of 'Minor' with mean < 0.25:\n")
+  #sel <- df[[class_col]] == "Major" & df[[mean_col]] < 0.25
+  sel <- df[[class_col]] == "Minor" & (is.na(df[[mean_col]]) | df[[mean_col]] < 0.25)
+  sel[is.na(sel)] <- TRUE
+  print(sum(sel))
+  df[[class_col]][sel] <- "Inactive"
 }
 
 #rowData(se_sum) <- df
@@ -333,6 +340,56 @@ for (cond in comparison) {
   cat("\n== After correction:", class_col, "==\n")
   print(table(rowData(se_sum)[[class_col]], useNA = "always"))
 }
+
+
+#message("Re-classifying borderline Inactive promoters (mean in [0.10, 0.25]) ...")
+
+#low_lo <- 0.10
+#low_hi <- 0.25   # CLOSED interval
+#gene_col <- "geneId"
+
+#for (cond in comparison) {
+
+#  class_col <- paste0(cond, ".class")
+#  mean_col  <- paste0(cond, ".mean")
+
+#  df[[class_col]] <- as.character(df[[class_col]])
+#  mean_v <- df[[mean_col]]
+
+  # CLOSED interval
+#  cand <- df[[class_col]] == "Inactive" &
+#          is.finite(mean_v) &
+#          mean_v >= low_lo & mean_v <= low_hi &
+#          !is.na(df[[gene_col]])
+
+#  if (!any(cand)) next
+
+  # Does gene already have a Major?
+#  has_major_by_gene <- tapply(df[[class_col]] == "Major",
+#                              df[[gene_col]],
+#                              any, na.rm = TRUE)
+
+#  cand_genes <- unique(df[[gene_col]][cand])
+#  genes_with_major <- cand_genes[has_major_by_gene[cand_genes] %in% TRUE]
+#  genes_no_major   <- setdiff(cand_genes, genes_with_major)
+
+  # If gene already has Major -> all borderline become Minor
+#  if (length(genes_with_major) > 0) {
+#    idx <- cand & df[[gene_col]] %in% genes_with_major
+#    df[[class_col]][idx] <- "Minor"
+#  }
+
+  # If gene has no Major -> top mean becomes Major
+#  if (length(genes_no_major) > 0) {
+#    for (g in genes_no_major) {
+#      idx_g <- which(cand & df[[gene_col]] == g)
+#      best  <- idx_g[which.max(df[[mean_col]][idx_g])]
+#      df[[class_col]][idx_g] <- "Minor"
+#      df[[class_col]][best]  <- "Major"
+#    }
+#  }
+#}
+
 # -------------------------
 # Classify genes based on promoter class
 # -------------------------

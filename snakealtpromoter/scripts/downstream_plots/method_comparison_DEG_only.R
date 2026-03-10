@@ -282,12 +282,6 @@ logfc_col <- "logFC"
 cage_up_ids   <- unique(cage_df$promoterId[cage_df[[fdr_col]] < 0.05 & cage_df[[logfc_col]] > 0])
 cage_down_ids <- unique(cage_df$promoterId[cage_df[[fdr_col]] < 0.05 & cage_df[[logfc_col]] < 0])
 
-# Read in promoter-level raw count matrices
-cage_counts     <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/CAGE_HEART/salmon/merged/promoter_counts.rds")
-salmon_counts   <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/RNA_HEART/salmon/merged/promoter_counts.rds")
-dexseq_counts   <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/RNA_HEART/dexseq/merge/promoter_counts.rds")
-proactiv_counts <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/RNA_HEART/proactiv/quantify/raw_promoter_counts.rds")
-#out_dir <- "/mnt/citadel2/research/shared/AltPromoterFlow/RNA_HEART/comparison2"
 if (!dir.exists(out_dir)) dir.create(out_dir, recursive = TRUE)
 
 # Only plot healthy sample counts
@@ -407,7 +401,6 @@ for (m in names(methods)) {
   ## --------------------------------------------------
   ## Use featurecounts to plot scatter plot
   ## --------------------------------------------------
-  fc_dir   <- "/mnt/citadel2/research/shared/AltPromoterFlow/CAGE_HEART/featureCounts"
   fc_files <- list.files(fc_dir, pattern = "_promoter_counts\\.txt$", full.names = TRUE)
 
   # Get all promoter level output files
@@ -441,7 +434,6 @@ for (m in names(methods)) {
 
 
 
-anno <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/genome/organisms/hg38/Annotation/proActiv_promoter_annotation.rds")
 promoterCoordinates <- anno@promoterCoordinates
 coord_df <- as.data.frame(mcols(anno@promoterCoordinates))
 sum(is.na(coord_df$internalPromoter)) 
@@ -771,10 +763,8 @@ plot_density_scatter(set2, "Scatter (counts ≥10)",                "scatter_set
 # CAGE junction reads raw counts processing
 #----------------
 #prom_anno_rds <- anno
-anno <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/genome/organisms/hg38/Annotation/proActiv_promoter_annotation.rds")
 pa <- anno
 
-fc_dir   <- "/mnt/citadel2/research/shared/AltPromoterFlow/CAGE_HEART/featureCounts"
 all_fc_files <- list.files(fc_dir, pattern = "_promoter_counts\\.txt$", full.names = TRUE)
 
 healthy_fc_files <- all_fc_files[grepl("Healthy", all_fc_files)]
@@ -900,7 +890,6 @@ abs_activity$promoterClass <- major_minor_promoter_classification(abs_activity)
 #abs_activity$promoterClass <- active_promoter_category(abs_activity)
 
 
-anno <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/genome/organisms/hg38/Annotation/proActiv_promoter_annotation.rds")
 pc <- proActiv:::promoterCoordinates(anno)
 internal_map <- setNames(mcols(pc)$internalPromoter, mcols(pc)$promoterId)
 
@@ -973,9 +962,6 @@ message("Saved results for category-wise scatter plot at:", out_dir)
 #-------------
 # Scatter plot of promoter in gene category
 #---------------
-mm <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/RNA_HEART/comparison3/CAGE_promoterId_Multipromoter.Multiactive.rds")
-ms <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/RNA_HEART/comparison3/CAGE_promoterId_Multipromoter.Singleactive.rds")
-ss <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/RNA_HEART/comparison3/CAGE_promoterId_Singlepromoter.Singleactive.rds")
 sapply(list(mm=mm, ms=ms, ss=ss), length)
 sapply(list(mm=mm, ms=ms, ss=ss), function(x) length(unique(x)))
 
@@ -1051,10 +1037,6 @@ for (cat in names(promoter_sets)) {
 # Scatter plot of promoter in activity category
 #---------------
 
-major <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/RNA_HEART/comparison3/CAGE_major_promoterId.rds")
-minor <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/RNA_HEART/comparison3/CAGE_minor_promoterId.rds")
-inactive <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/RNA_HEART/comparison3/CAGE_inactive_promoterId.rds")
-intersect <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/RNA_HEART/comparison/intersect_major_minor.rds")
 
 methods <- list(
   Salmon   = salmon_counts,
@@ -1125,7 +1107,6 @@ for (cat in names(promoter_sets)) {
 # ---------------------------
 # Barplot: Single stacked bar per method (Up/Down segments)
 # ---------------------------
-cage_counts     <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/CAGE_HEART/salmon/merged/promoter_counts.rds")
 
 library(dplyr)
 library(ggplot2)

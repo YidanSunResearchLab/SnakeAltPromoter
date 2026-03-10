@@ -24,5 +24,6 @@ dependencies:
   - r-ggplot2=3.5.2
   - r-reshape2=1.4.4
   - r-ggpubr=0.6.0
+  - r-venndiagram=1.8.2
   #added because No module named 'HTSeq'.
   - htseq==2.0.5

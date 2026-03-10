@@ -173,6 +173,7 @@ def main():
     parser.add_argument("--fastqc",action="store_true",help="Enable this flag if needs fastqc.")
     parser.add_argument("--trim",action="store_true",help="Enable this flag if reads were trimmed using Trim Galore. If not set, the pipeline will use downsampled fastqs.")
     parser.add_argument("--threads", type=int, default=30, help="Number of CPU threads to use for parallel processing (default: 30).")
+    parser.add_argument("--readlen_sim", type=int, default=0, help="Simulate read length by trimming reads to L bp (0 disables). E.g. 50, 75, 100, 150.")
     parser.add_argument("--method", type=str, default="rnaseq", choices=["salmon", "proactiv", "dexseq", "cage", "rnaseq"], help="Which method to run: salmon / proactiv / dexseq / cage / rnaseq")
     parser.add_argument("--reads", type=str, default="paired", choices=["single", "paired"], help=" Reads are single-ended or paired: single / paired")
     parser.add_argument("--min_pFC", type=float, default=2.0, help="Additional threshold of minimum fold change of promoter activity for a promoter to be considered alternative promoter (default 2.0)")
@@ -208,6 +209,7 @@ def main():
 
 
     threads = args.threads
+    readlen_sim = args.readlen_sim
     method = args.method
     min_pFC = args.min_pFC
     max_gFC = args.max_gFC
@@ -422,6 +424,7 @@ def main():
         "trim": trim,
         "reads": reads,
         "threads": threads,
+        "readlen_sim": readlen_sim,
         "samples_dict": samples_dict,
         "method": method,
         "test_condition": test_condition,

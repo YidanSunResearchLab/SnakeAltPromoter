@@ -4,5 +4,5 @@ channels:
   - conda-forge
 dependencies:
   #did not include python because it is easy in conflict
-  - samtools
-  - deeptools
+  - samtools=1.23
+  - deeptools=3.5.6

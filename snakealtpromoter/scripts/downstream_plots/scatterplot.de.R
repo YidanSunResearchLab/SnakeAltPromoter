@@ -15,11 +15,8 @@ library(SummarizedExperiment)
 library(dplyr)
 
 
-#out_dir <- "/mnt/citadel2/research/shared/SnakeAltPromoter_paper_revision/scatterplot"
 
 ##Gene annotation to get intronless promoters
-load(file.path("/mnt/citadelb/publication/snakealtpromoter/Result/lengths_promoters.RData"))
-promoter_anno <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/genome/organisms/hg38/Annotation/proActiv_promoter_annotation.rds")
 coord <- promoter_anno@promoterCoordinates
 intronless_ids <- as.character(coord$promoterId[!coord$internalPromoter %in% TRUE &
                                             lengths(coord$intronId) == 0])
@@ -283,132 +280,6 @@ combine.logFC.for.each.dataset <- function(logfc_wide, logfc_wide_all, out_dir, 
 }
 
 
-
-# dexseq <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/dexseq/differential/comparisons_/K562_vs_H1-hESC/Promoter_differential_activity_FDR0_05.rds")
-# salmon <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/salmon/differential/comparisons_/K562_vs_H1-hESC/Promoter_differential_activity_FDR0_05.rds")
-# proactiv <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/proactiv/differential/comparisons_/K562_vs_H1-hESC/Promoter_differential_activity_FDR0_05.rds")
-# cage <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/cage/differential/comparisons_/K562_vs_H1-hESC/Promoter_differential_activity_FDR0_05.rds")
-# dexseq_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/dexseq/differential/comparisons_/K562_vs_H1-hESC/Promoter_differential_activity.rds")
-# salmon_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/salmon/differential/comparisons_/K562_vs_H1-hESC/Promoter_differential_activity.rds")
-# proactiv_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/proactiv/differential/comparisons_/K562_vs_H1-hESC/Promoter_differential_activity.rds")
-# cage_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/cage/differential/comparisons_/K562_vs_H1-hESC/Promoter_differential_activity.rds")
-# #out_dir <- "/mnt/citadelb/publication/snakealtpromoter/Result/K562_vs_H1-hESC"
-# out_dir <- "/mnt/citadel2/research/shared/SnakeAltPromoter_paper_revision/scatterplot/K562_vs_H"
-
-#gene_name = read.delim("/mnt/citadel2/research/syidan/Genomes/GRCh38/release-47-index/annotation/genes.symbol", header = FALSE, comment.char = "#")
-#cage$geneSymbol <- gene_name$V2[match(cage$geneId, gene_name$V1)]
-#write.table(unique(cage$geneSymbol[!is.na(cage$geneSymbol) & cage$FDR < 0.05 & cage$logFC > 0]),  file.path(out_dir,"cage_upregulated_genes.txt"),  quote = FALSE, row.names = FALSE, col.names = FALSE)
-#write.table(unique(cage$geneSymbol[!is.na(cage$geneSymbol) & cage$FDR < 0.05 & cage$logFC < 0]), file.path(out_dir,"cage_downregulated_genes.txt"), quote = FALSE, row.names = FALSE, col.names = FALSE)
-
-#--------------------------------------------------------
-###For heart healthy and failure
-#--------------------------------------------------------
-if(TRUE){
-  out_dir <- "/mnt/citadelb/publication/snakealtpromoter/Result/Heart_Failure_vs_Healthy"
-  # dexseq <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/new_test_for_sample_sheet/dexseq/differential/comparisons_/Heart_Failure_vs_Healthy/Promoter_differential_activity_FDR0_05.rds")
-  # salmon <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/new_test_for_sample_sheet/salmon/differential/comparisons_/Heart_Failure_vs_Healthy/Promoter_differential_activity_FDR0_05.rds")
-  # proactiv <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/new_test_for_sample_sheet/proactiv/differential/comparisons_/Heart_Failure_vs_Healthy/Promoter_differential_activity_FDR0_05.rds")
-  # cage <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/new_test_for_sample_sheet/cage/differential/comparisons_/Heart_Failure_vs_Healthy/Promoter_differential_activity_FDR0_05.rds")
-  # dexseq_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/new_test_for_sample_sheet/dexseq/differential/comparisons_/Heart_Failure_vs_Healthy/Promoter_differential_activity.rds")
-  # salmon_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/new_test_for_sample_sheet/salmon/differential/comparisons_/Heart_Failure_vs_Healthy/Promoter_differential_activity.rds")
-  # proactiv_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/new_test_for_sample_sheet/proactiv/differential/comparisons_/Heart_Failure_vs_Healthy/Promoter_differential_activity.rds")
-  # cage_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/new_test_for_sample_sheet/cage/differential/comparisons_/Heart_Failure_vs_Healthy/Promoter_differential_activity.rds")
-  dexseq <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/heart_AltPromoter/RNAseq/dexseq/differential/comparisons_/Failure_vs_Healthy/Promoter_differential_activity_FDR0_05.rds")
-  salmon <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/heart_AltPromoter/RNAseq/salmon/differential/comparisons_/Failure_vs_Healthy/Promoter_differential_activity_FDR0_05.rds")
-  proactiv <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/heart_AltPromoter/RNAseq/proactiv/differential/comparisons_/Failure_vs_Healthy/Promoter_differential_activity_FDR0_05.rds")
-  cage <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/heart_AltPromoter/CAGE/cage/differential/comparisons_/Failure_vs_Healthy/Promoter_differential_activity_FDR0_05.rds")
-  dexseq_all <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/heart_AltPromoter/RNAseq/dexseq/differential/comparisons_/Failure_vs_Healthy/Promoter_differential_activity.rds")
-  salmon_all <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/heart_AltPromoter/RNAseq/salmon/differential/comparisons_/Failure_vs_Healthy/Promoter_differential_activity.rds")
-  proactiv_all <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/heart_AltPromoter/RNAseq/proactiv/differential/comparisons_/Failure_vs_Healthy/Promoter_differential_activity.rds")
-  cage_all <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/heart_AltPromoter/CAGE/cage/differential/comparisons_/Failure_vs_Healthy/Promoter_differential_activity.rds")
-  logfc_df     <- rbind(add_method(cage, "CAGE"), add_method(salmon, "Salmon"), add_method(dexseq, "DEXSeq"), add_method(proactiv, "proActiv"))
-  logfc_df_all <- rbind(add_method(cage_all, "CAGE"), add_method(salmon_all, "Salmon"), add_method(dexseq_all, "DEXSeq"), add_method(proactiv_all, "proActiv"))
-
-  ##Intronless
-  logfc_wide <- pivot_wider(logfc_df[logfc_df$promoterId %in% intronless_ids,],id_cols    = promoterId,names_from = method,values_from = logFC)
-  logfc_wide_all <- pivot_wider(logfc_df_all[logfc_df_all$promoterId %in% intronless_ids,], id_cols    = promoterId, names_from = method, values_from = logFC)
-  combine.logFC.for.each.dataset(logfc_wide, logfc_wide_all, out_dir, filename="nointron")
-
-  ##With Intron
-  logfc_wide <- pivot_wider(logfc_df[logfc_df$promoterId %in% intron_ids,],id_cols    = promoterId,names_from = method,values_from = logFC)
-  logfc_wide_all <- pivot_wider(logfc_df_all[logfc_df_all$promoterId %in% intron_ids,], id_cols    = promoterId, names_from = method, values_from = logFC)
-  combine.logFC.for.each.dataset(logfc_wide, logfc_wide_all, out_dir, filename="withintron")
-
-}
-
-#--------------------------------------------------------
-###For Brain female and male
-#--------------------------------------------------------
-if(TRUE){
-  out_dir <- "/mnt/citadelb/publication/snakealtpromoter/Result/Brain"
-  dexseq <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/brain_AltPromoter/RNAseq_test/dexseq/differential/comparisons_/male_vs_female/Promoter_differential_activity_FDR0_05.rds")
-  salmon <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/brain_AltPromoter/RNAseq_test/salmon/differential/comparisons_/male_vs_female/Promoter_differential_activity_FDR0_05.rds")
-  proactiv <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/brain_AltPromoter/RNAseq_test/proactiv/differential/comparisons_/male_vs_female/Promoter_differential_activity_FDR0_05.rds")
-  cage <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/brain_AltPromoter/CAGE_test/cage/differential/comparisons_/male_vs_female/Promoter_differential_activity_FDR0_05.rds")
-  dexseq_all <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/brain_AltPromoter/RNAseq_test/dexseq/differential/comparisons_/male_vs_female/Promoter_differential_activity.rds")
-  salmon_all <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/brain_AltPromoter/RNAseq_test/salmon/differential/comparisons_/male_vs_female/Promoter_differential_activity.rds")
-  proactiv_all <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/brain_AltPromoter/RNAseq_test/proactiv/differential/comparisons_/male_vs_female/Promoter_differential_activity.rds")
-  cage_all <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/brain_AltPromoter/CAGE_test/cage/differential/comparisons_/male_vs_female/Promoter_differential_activity.rds")
-  logfc_df     <- rbind(add_method(cage, "CAGE"), add_method(salmon, "Salmon"), add_method(dexseq, "DEXSeq"), add_method(proactiv, "proActiv"))
-  logfc_df_all <- rbind(add_method(cage_all, "CAGE"), add_method(salmon_all, "Salmon"), add_method(dexseq_all, "DEXSeq"), add_method(proactiv_all, "proActiv"))
-
-  ##Intronless
-  logfc_wide <- pivot_wider(logfc_df[logfc_df$promoterId %in% intronless_ids,],id_cols    = promoterId,names_from = method,values_from = logFC)
-  logfc_wide_all <- pivot_wider(logfc_df_all[logfc_df_all$promoterId %in% intronless_ids,], id_cols    = promoterId, names_from = method, values_from = logFC)
-  combine.logFC.for.each.dataset(logfc_wide, logfc_wide_all, out_dir, filename="nointron")
-
-  ##With Intron
-  logfc_wide <- pivot_wider(logfc_df[logfc_df$promoterId %in% intron_ids,],id_cols    = promoterId,names_from = method,values_from = logFC)
-  logfc_wide_all <- pivot_wider(logfc_df_all[logfc_df_all$promoterId %in% intron_ids,], id_cols    = promoterId, names_from = method, values_from = logFC)
-  combine.logFC.for.each.dataset(logfc_wide, logfc_wide_all, out_dir, filename="withintron")
-
-}
-
-
-#--------------------------------------------------------
-###For cell lines
-#--------------------------------------------------------
-if(TRUE){
-  out_dir <- "/mnt/citadelb/publication/snakealtpromoter/Result/K562_vs_GM12878"
-  # dexseq <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/dexseq/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity_FDR0_05.rds")
-  # salmon <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/salmon/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity_FDR0_05.rds")
-  # proactiv <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/proactiv/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity_FDR0_05.rds")
-  # cage <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/cage/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity_FDR0_05.rds")
-  # dexseq_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/dexseq/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity.rds")
-  # salmon_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/salmon/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity.rds")
-  # proactiv_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/proactiv/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity.rds")
-  # cage_all <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/test_for_sample_sheet/cage/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity.rds")
-  dexseq <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/RNAseq/dexseq/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity_FDR0_05.rds")
-  salmon <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/RNAseq/salmon/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity_FDR0_05.rds")
-  proactiv <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/RNAseq/proactiv/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity_FDR0_05.rds")
-  cage <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/CAGE/cage/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity_FDR0_05.rds")
-  dexseq_all <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/RNAseq/dexseq/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity.rds")
-  salmon_all <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/RNAseq/salmon/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity.rds")
-  proactiv_all <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/RNAseq/proactiv/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity.rds")
-  cage_all <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/CAGE/cage/differential/comparisons_/K562_vs_GM12878/Promoter_differential_activity.rds")
-  logfc_df     <- rbind(add_method(cage, "CAGE"), add_method(salmon, "Salmon"), add_method(dexseq, "DEXSeq"), add_method(proactiv, "proActiv"))
-  logfc_df_all <- rbind(add_method(cage_all, "CAGE"), add_method(salmon_all, "Salmon"), add_method(dexseq_all, "DEXSeq"), add_method(proactiv_all, "proActiv"))
-
-  ##All
-  logfc_wide <- pivot_wider(logfc_df,id_cols    = promoterId,names_from = method,values_from = logFC)
-  logfc_wide_all <- pivot_wider(logfc_df_all, id_cols    = promoterId, names_from = method, values_from = logFC)
-  combine.logFC.for.each.dataset(logfc_wide, logfc_wide_all, out_dir, filename="all")
-
-  ##Intronless
-  logfc_wide <- pivot_wider(logfc_df[logfc_df$promoterId %in% intronless_ids,],id_cols    = promoterId,names_from = method,values_from = logFC)
-  logfc_wide_all <- pivot_wider(logfc_df_all[logfc_df_all$promoterId %in% intronless_ids,], id_cols    = promoterId, names_from = method, values_from = logFC)
-  combine.logFC.for.each.dataset(logfc_wide, logfc_wide_all, out_dir, filename="nointron")
-
-  ##With Intron
-  logfc_wide <- pivot_wider(logfc_df[logfc_df$promoterId %in% intron_ids,],id_cols    = promoterId,names_from = method,values_from = logFC)
-  logfc_wide_all <- pivot_wider(logfc_df_all[logfc_df_all$promoterId %in% intron_ids,], id_cols    = promoterId, names_from = method, values_from = logFC)
-  combine.logFC.for.each.dataset(logfc_wide, logfc_wide_all, out_dir, filename="withintron")
-
-}
-
-
-
-
 #--------------------------------------------------------------------------------------
 ##scatterplot of Promoter usage change
 #--------------------------------------------------------------------------------------
@@ -600,52 +471,6 @@ plot_vs_cage_on_ids <- function(cage_df, method_df, other_name, ids, out_pdf,
 
 
 
-
-#--------------------------------------------------------
-###For cell lines
-#--------------------------------------------------------
-out_dir <- "/mnt/citadelb/publication/snakealtpromoter/Result/K562_vs_GM12878"
-# cage_sig <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/3_Cell_Lines/cage/differential/Promoter_differential_activity_FDR0_05.rds")
-# proactiv_sig <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/3_Cell_Lines/proactiv/differential/Promoter_differential_activity_FDR0_05.rds")
-# salmon_sig <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/3_Cell_Lines/salmon/differential/Promoter_differential_activity_FDR0_05.rds")
-# dexseq_sig <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/3_Cell_Lines/dexseq/differential/Promoter_differential_activity_FDR0_05.rds")
-# prom_ids <- unique(as.numeric(cage_sig$promoterId))
-
-# se_cage    <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/3_Cell_Lines/cage/merge/Promoter_activity_SE.rds")
-# se_pro     <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/3_Cell_Lines/proactiv/merge/Promoter_activity_SE.rds")
-# se_salmon  <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/3_Cell_Lines/salmon/merge/Promoter_activity_SE.rds")
-# se_dexseq  <- readRDS("/mnt/citadel2/research/shared/AltPromoterFlow/3_Cell_Lines/dexseq/merge/Promoter_activity_SE.rds")
-
-cage_sig <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/CAGE/cage/differential/Promoter_differential_activity_FDR0_05.rds")
-proactiv_sig <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/RNAseq/proactiv/differential/Promoter_differential_activity_FDR0_05.rds")
-salmon_sig <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/RNAseq/salmon/differential/Promoter_differential_activity_FDR0_05.rds")
-dexseq_sig <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/RNAseq/dexseq/differential/Promoter_differential_activity_FDR0_05.rds")
-prom_ids <- unique(as.numeric(cage_sig$promoterId))
-
-se_cage    <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/CAGE/cage/promoter_classification_total/Promoter_activity_SE.rds")
-se_pro     <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/RNAseq/proactiv/promoter_classification_total/Promoter_activity_SE.rds")
-se_salmon  <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/RNAseq/salmon/promoter_classification_total/Promoter_activity_SE.rds")
-se_dexseq  <- readRDS("/mnt/citadelb/publication/snakealtpromoter/Processed/cellline_AltPromoter/RNAseq/dexseq/promoter_classification_total/Promoter_activity_SE.rds")
-
-cage_delta   <- compute_delta_rel(se_cage)
-pro_delta    <- compute_delta_rel(se_pro)
-salmon_delta <- compute_delta_rel(se_salmon)
-dexseq_delta <- compute_delta_rel(se_dexseq)
-
-# Only keeping ids significant in differential activity
-keep <- data.frame(promoterId = prom_ids)
-cage_delta   <- merge(keep, cage_delta,   by = "promoterId", all.x = TRUE)
-pro_delta    <- merge(keep, pro_delta,    by = "promoterId", all.x = TRUE,
-                      suffixes = c("", "_pro"))
-salmon_delta <- merge(keep, salmon_delta, by = "promoterId", all.x = TRUE,
-                      suffixes = c("", "_salmon"))
-dexseq_delta <- merge(keep, dexseq_delta, by = "promoterId", all.x = TRUE,
-                      suffixes = c("", "_dexseq"))
-
-cage_ids    <- split_up_down_ids(cage_sig)
-pro_ids     <- split_up_down_ids(proactiv_sig)
-salmon_ids  <- split_up_down_ids(salmon_sig)
-dexseq_ids  <- split_up_down_ids(dexseq_sig)
 
 ################
 ##With Introns

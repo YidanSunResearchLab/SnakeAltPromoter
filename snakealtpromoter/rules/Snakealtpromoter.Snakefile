@@ -16,6 +16,8 @@ samples = list(samples_dict.keys())
 reads = config["reads"]  # ["R1", "R2"]
 # BAM mode = all samples have a 'bam' key in samples_dict
 bam_mode = all(("bam" in samples_dict[s]) for s in samples)
+# 0 = off; 50/75/100/150 = simulate fixed read length
+readlen_sim = int(config.get("readlen_sim", 0))
 
 is_paired = "R2" in reads
 
@@ -25,6 +27,7 @@ if not bam_mode:
         ruleorder: trim_galore_paired > trim_galore_single
         ruleorder: star_paired > star_single
         ruleorder: salmon_quant_paired > salmon_quant_single
+        ruleorder: simulate_readlen_paired > simulate_readlen_single
     else:
         ruleorder: dexseq_featurecounts_single > dexseq_featurecounts_paired
         ruleorder: trim_galore_single > trim_galore_paired
@@ -40,7 +43,7 @@ else:
     ruleorder: salmon_quant_single > salmon_quant_paired
 
 # General config
-threads = config.get("threads", 16)
+threads = config.get("threads", 16) / 7
 downsample_size = config.get("downsample_size", 0)
 fastqc = config.get("fastqc", False)
 trim = config.get("trim", False)
@@ -306,7 +309,7 @@ if do_cage:
 
 input_all.append(output_dir + "/multiqc/multiqc_report.html")
 
-rule all:
+rule all:   
     input:
         #expand(output_dir + "/fastqs/raw/{sample}/{sample}_{read}.fastq.gz", sample=samples, read=reads),
         expand(output_dir + "/STAR/{sample}/{sample}.sorted.bam", sample=samples),
@@ -510,13 +513,42 @@ if bam_mode:
                 """
 
 else:
+    rule simulate_readlen_single:
+        input:
+            r1 = lambda wc: (
+                output_dir + f"/fastqs/trimmed/{wc.sample}/{wc.sample}_R1.fastq.gz"
+                if trim else
+                output_dir + f"/fastqs/downsampled/{wc.sample}/{wc.sample}_R1.fastq.gz"
+            )
+        output:
+            r1 = output_dir + f"/fastqs/readlen_{readlen_sim}" + "/{sample}/{sample}_R1.fastq.gz"
+        params:
+            L = readlen_sim
+        log:
+            "logs/readlen_sim.{sample}.log"
+        threads: 1
+        conda: "envs/altbasic.yaml"
+        shell:
+            r"""
+            set -euo pipefail
+            mkdir -p $(dirname {output.r1})
+            if [ {params.L} -le 0 ]; then
+                ln -sf {input.r1} {output.r1}
+                exit 0
+            fi
+            seqtk trimfq -L {params.L} {input.r1} | gzip > {output.r1}
+            """
 
     rule star_single:
         input:
-            r1 = lambda wildcards: (
-                output_dir + f"/fastqs/trimmed/{wildcards.sample}/{wildcards.sample}_R1.fastq.gz"
-                if trim
-                else output_dir + f"/fastqs/downsampled/{wildcards.sample}/{wildcards.sample}_R1.fastq.gz"
+            r1=lambda wc: (
+                output_dir + f"/fastqs/readlen_{readlen_sim}/{wc.sample}/{wc.sample}_R1.fastq.gz"
+                if readlen_sim > 0 else
+                (
+                    output_dir + f"/fastqs/trimmed/{wc.sample}/{wc.sample}_R1.fastq.gz"
+                    if trim else
+                    output_dir + f"/fastqs/downsampled/{wc.sample}/{wc.sample}_R1.fastq.gz"
+                )
             ),
             index=star_index,
             gtf=genes_gtf
@@ -529,7 +561,7 @@ else:
             sample_dir=output_dir + "/STAR/{sample}",
             samsort_memory="8G",
             samtools_threads=16,
-            precomputed_dir  = star_precomputed_dir
+            precomputed_dir=star_precomputed_dir
         log:
             "logs/star.{sample}.log"
         benchmark:
@@ -537,43 +569,87 @@ else:
         threads: min(32, threads)
         conda: "envs/basic.yaml"
         shell:
-            """
+            r"""
+            set -euo pipefail
             mkdir -p {params.sample_dir}
             mkdir -p $(dirname {output.sj})
-            if [ -n "{params.precomputed_dir}" ] && \
-            [ -s "{params.precomputed_dir}/{wildcards.sample}.sorted.bam" ] && \
-            [ -s "{params.precomputed_dir}/{wildcards.sample}.SJ.out.tab" ]; then
-                echo "Using precomputed STAR outputs for {wildcards.sample}" >> {log}
-                ln -sf {params.precomputed_dir}/{wildcards.sample}.sorted.bam {output.bam}
-                ln -sf {params.precomputed_dir}/{wildcards.sample}.SJ.out.tab {output.sj}
-            else
-                echo "Running STAR for {wildcards.sample}" >> {log}
-                STAR --runThreadN {threads} \
-                    {params.opts} \
-                    --sjdbOverhang 100 \
-                    --outSAMunmapped Within \
-                    --outSAMtype BAM Unsorted \
-                    --sjdbGTFfile {input.gtf} \
-                    --genomeDir {input.index} \
-                    --readFilesIn {input.r1} \
-                    --readFilesCommand 'gunzip -c' \
-                    --outFileNamePrefix {params.prefix}
-            
-                    samtools sort -m {params.samsort_memory} -T {params.sample_dir}/{wildcards.sample} -@ {params.samtools_threads} -O bam -o {output.bam} {params.prefix}Aligned.out.bam > {log} 2>&1
-            fi
+
+            STAR --runThreadN {threads} \
+                {params.opts} \
+                --sjdbOverhang 100 \
+                --outSAMunmapped Within \
+                --outSAMtype BAM Unsorted \
+                --sjdbGTFfile {input.gtf} \
+                --genomeDir {input.index} \
+                --readFilesIn {input.r1} \
+                --readFilesCommand 'gunzip -c' \
+                --outFileNamePrefix {params.prefix} >> {log} 2>&1
+
+            samtools sort -m {params.samsort_memory} \
+                -T {params.sample_dir}/{wildcards.sample} \
+                -@ {params.samtools_threads} \
+                -O bam \
+                -o {output.bam} \
+                {params.prefix}Aligned.out.bam >> {log} 2>&1
             """
+
+
+    rule simulate_readlen_paired:
+        input:
+            r1=lambda wc: (
+                output_dir + f"/fastqs/trimmed/{wc.sample}/{wc.sample}_R1.fastq.gz"
+                if trim else
+                output_dir + f"/fastqs/downsampled/{wc.sample}/{wc.sample}_R1.fastq.gz"
+            ),
+            r2=lambda wc: (
+                output_dir + f"/fastqs/trimmed/{wc.sample}/{wc.sample}_R2.fastq.gz"
+                if trim else
+                output_dir + f"/fastqs/downsampled/{wc.sample}/{wc.sample}_R2.fastq.gz"
+            )
+        output:
+            r1=output_dir + f"/fastqs/readlen_{readlen_sim}" + "/{sample}/{sample}_R1.fastq.gz",
+            r2=output_dir + f"/fastqs/readlen_{readlen_sim}" + "/{sample}/{sample}_R2.fastq.gz"
+        params:
+            L=readlen_sim
+        log:
+            "logs/readlen_sim.{sample}.log"
+        threads: 1
+        conda: "envs/altbasic.yaml"
+        shell:
+            r"""
+            set -euo pipefail
+            mkdir -p $(dirname {output.r1})
+
+            if [ {params.L} -le 0 ]; then
+                ln -sf {input.r1} {output.r1}
+                ln -sf {input.r2} {output.r2}
+                exit 0
+            fi
+
+            seqtk trimfq -L {params.L} {input.r1} | gzip > {output.r1}
+            seqtk trimfq -L {params.L} {input.r2} | gzip > {output.r2}
+            """
+
 
     rule star_paired:
         input:
-            r1 = lambda wildcards: (
-                output_dir + f"/fastqs/trimmed/{wildcards.sample}/{wildcards.sample}_R1.fastq.gz"
-                if trim
-                else output_dir + f"/fastqs/downsampled/{wildcards.sample}/{wildcards.sample}_R1.fastq.gz"
+            r1=lambda wc: (
+                output_dir + f"/fastqs/readlen_{readlen_sim}/{wc.sample}/{wc.sample}_R1.fastq.gz"
+                if readlen_sim > 0 else
+                (
+                    output_dir + f"/fastqs/trimmed/{wc.sample}/{wc.sample}_R1.fastq.gz"
+                    if trim else
+                    output_dir + f"/fastqs/downsampled/{wc.sample}/{wc.sample}_R1.fastq.gz"
+                )
             ),
-            r2 = lambda wildcards: (
-                output_dir + f"/fastqs/trimmed/{wildcards.sample}/{wildcards.sample}_R2.fastq.gz"
-                if trim
-                else output_dir + f"/fastqs/downsampled/{wildcards.sample}/{wildcards.sample}_R2.fastq.gz"
+            r2=lambda wc: (
+                output_dir + f"/fastqs/readlen_{readlen_sim}/{wc.sample}/{wc.sample}_R2.fastq.gz"
+                if readlen_sim > 0 else
+                (
+                    output_dir + f"/fastqs/trimmed/{wc.sample}/{wc.sample}_R2.fastq.gz"
+                    if trim else
+                    output_dir + f"/fastqs/downsampled/{wc.sample}/{wc.sample}_R2.fastq.gz"
+                )
             ),
             index=star_index,
             gtf=genes_gtf
@@ -586,7 +662,7 @@ else:
             sample_dir=output_dir + "/STAR/{sample}",
             samsort_memory="8G",
             samtools_threads=16,
-            precomputed_dir  = star_precomputed_dir
+            precomputed_dir=star_precomputed_dir
         log:
             "logs/star.{sample}.log"
         benchmark:
@@ -594,32 +670,29 @@ else:
         threads: min(32, threads)
         conda: "envs/basic.yaml"
         shell:
-            """
+            r"""
+            set -euo pipefail
             mkdir -p {params.sample_dir}
             mkdir -p $(dirname {output.sj})
-            if [ -n "{params.precomputed_dir}" ] && \
-            [ -s "{params.precomputed_dir}/{wildcards.sample}.sorted.bam" ] && \
-            [ -s "{params.precomputed_dir}/{wildcards.sample}.SJ.out.tab" ]; then
-                echo "Using precomputed STAR outputs for {wildcards.sample}" >> {log}
-                ln -sf {params.precomputed_dir}/{wildcards.sample}.sorted.bam {output.bam}
-                ln -sf {params.precomputed_dir}/{wildcards.sample}.SJ.out.tab {output.sj}
-            else
-                echo "Running STAR (paired-end) for {wildcards.sample}" >> {log}
-                STAR --runThreadN {threads} \
-                    {params.opts} \
-                    --sjdbOverhang 100 \
-                    --outSAMunmapped Within \
-                    --outSAMtype BAM Unsorted \
-                    --sjdbGTFfile {input.gtf} \
-                    --genomeDir {input.index} \
-                    --readFilesIn {input.r1} {input.r2} \
-                    --readFilesCommand 'gunzip -c' \
-                    --outFileNamePrefix {params.prefix}
-            
-                    samtools sort -m {params.samsort_memory} -T {params.sample_dir}/{wildcards.sample} -@ {params.samtools_threads} -O bam -o {output.bam} {params.prefix}Aligned.out.bam > {log} 2>&1
-            fi
-            """
 
+            STAR --runThreadN {threads} \
+                {params.opts} \
+                --sjdbOverhang 100 \
+                --outSAMunmapped Within \
+                --outSAMtype BAM Unsorted \
+                --sjdbGTFfile {input.gtf} \
+                --genomeDir {input.index} \
+                --readFilesIn {input.r1} {input.r2} \
+                --readFilesCommand 'gunzip -c' \
+                --outFileNamePrefix {params.prefix} >> {log} 2>&1
+
+            samtools sort -m {params.samsort_memory} \
+                -T {params.sample_dir}/{wildcards.sample} \
+                -@ {params.samtools_threads} \
+                -O bam \
+                -o {output.bam} \
+                {params.prefix}Aligned.out.bam >> {log} 2>&1
+            """
     rule index_bam:
         input:
             bam = output_dir + "/STAR/{sample}/{sample}.sorted.bam"
@@ -715,7 +788,7 @@ rule proactiv_count_diff:
     params:
         out_dir = proactiv_merge_dir,
         condition = diff_conditions_str,
-        sj_list   = output_dir + "/proactiv/counts_merged/sj_files.list"
+        sj_list   = output_dir + "/proactiv/counts_merged_diff/sj_files.list"
     log:
         "logs/proactiv_counts.log"
     threads: threads
@@ -1349,7 +1422,7 @@ rule salmon_promoter_merge:
           "logs/salmon_promoter_merge.log"    
     shell:
         """
-        Rscript {workflow.basedir}/../scripts/merge_promoter_counts.R \
+        Rscript {workflow.basedir}/../scripts/merge_promoter_counts_copy.R \
             {output_dir}/salmon/counts_merged \
             {input.promoter_rds} \
             "{params.samples}" \
@@ -1371,7 +1444,7 @@ rule salmon_promoter_merge_samplesheet:
         condition_compare = diff_condition_compare_str,
         newnames = diff_samples_str,
     log:
-          "logs/salmon_promoter_merge.log"  
+          "logs/salmon_promoter_merge_samplesheet.log"  
     shell:
         """
         mkdir -p "{params.out_dir}"
@@ -1761,7 +1834,7 @@ rule cage_promoter_classification:
         condition = diff_conditions_str,
         condition_compare = diff_condition_compare_str,
         fit_script = os.path.join(SCRIPTS_DIR, "sanity_check.R"),
-        batch=batch_condition,
+        batch=diff_batch_str,
         norm_method=config.get("norm_method", "deseq2")
 
     log:
@@ -1773,7 +1846,7 @@ rule cage_promoter_classification:
         """
         mkdir -p "{params.out_dir}"
 
-        Rscript {workflow.basedir}/../scripts/promoter_classify.R \
+        Rscript {workflow.basedir}/../scripts/promoter_classify_cage.R \
             "{params.out_dir}" \
             {input.promoter_rds} \
             "{params.samples}" \
@@ -1800,7 +1873,7 @@ rule cage_differential:
         newnames = " ".join(diff_samples),
         condition = diff_conditions_str,
         condition_compare = diff_condition_compare_str,
-        batch_unsorted = diff_batch_str,
+        batch = diff_batch_str,
         baseline      = control_condition,
         reference    = test_condition,
         min_promoter_fold_change = min_pFC,

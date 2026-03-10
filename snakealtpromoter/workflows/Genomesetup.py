@@ -15,7 +15,7 @@ def main():
     parser.add_argument("--organism_fasta", required=True, help="Path to the organism FASTA file with 'chr' prefix (e.g., /path/to/hg38.fa).")
     parser.add_argument("--genes_gtf", required=True, help="Path to the GTF file for gene annotations (e.g., /path/to/gencode.v38.annotation.gtf).")
     parser.add_argument("--threads", type=int, default=16, help="Number of CPU threads for parallel processing (default: 16).")
-
+    parser.add_argument("--main_chr_file", required=True, help="Path to the main chromosomes of the organism (e.g., /path/to/hg38chromosomes.txt). The txt file lists one chromosome per line.")
     # Parse known arguments, capturing extra Snakemake args
     args, extra_args = parser.parse_known_args()
 
@@ -49,6 +49,7 @@ def main():
         f"organism_fasta={args.organism_fasta}",
         f"genes_gtf={args.genes_gtf}",
         f"threads={args.threads}",
+        f"main_chroms={args.main_chr_file}",
         "--cores", str(args.threads),
     ]
 

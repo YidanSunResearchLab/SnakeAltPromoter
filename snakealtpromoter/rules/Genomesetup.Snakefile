@@ -11,27 +11,11 @@ organism = config["organism"]
 organism_fasta = config["organism_fasta"]
 genes_gtf = config["genes_gtf"]
 threads = config["threads"]
+main_chr_file = config["main_chroms"]
 
 # Validate config
 if not all([output_dir, organism, organism_fasta, genes_gtf, threads]):
     raise ValueError("Missing required config variables: output_dir, organism, organism_fasta, genes_gtf, threads")
-
-# Function to map organism to species
-def get_species(organism):
-    species_map = {
-        "hg": "Homo_sapiens",
-        "mm": "Mus_musculus",
-        "dm": "Drosophila_melanogaster",
-        "rn": "Rattus_norvegicus",
-        "dr": "Danio_rerio",
-        "ce": "Caenorhabditis_elegans",
-        "sc": "Saccharomyces_cerevisiae"
-    }
-    prefix = organism[:2].lower()
-    species = species_map.get(prefix, "Homo_sapiens")
-    if prefix not in species_map:
-        print(f"Warning: Unrecognized organism prefix '{prefix}' in '{organism}'. Defaulting to 'Homo_sapiens'.")
-    return species
 
 # Ensure output directories
 os.makedirs(output_dir + "/organisms/" + organism, exist_ok=True)
@@ -87,27 +71,60 @@ rule copy_fasta:
         fasta = output_dir + "/organisms/{organism}/{organism}.fa",
         fai   = output_dir + "/organisms/{organism}/{organism}.fa.fai"
     params:
-        organism_dir = output_dir + "/organisms/{organism}",
-        fasta        = organism_fasta
+        organism_dir  = output_dir + "/organisms/{organism}",
+        fasta         = organism_fasta,
+        main_chr_file = main_chr_file
     threads: threads
     conda: "envs/basic.yaml"
     log: "logs/copy_fasta_{organism}.log"
     benchmark: "benchmarks/copy_fasta_{organism}.bmk.txt"
     shell:
-        """
-        if [ "{params.fasta}" = "" ]; then
-            echo "Error: organism_fasta is 'NA' or not provided." >&2
+        r"""
+        set -euo pipefail
+
+        if [ "{params.fasta}" == "" ] || [ "{params.fasta}" == "NA" ]; then
+            echo "Error: organism_fasta is not provided." >&2
             exit 1
         fi
 
-        mkdir -p {params.organism_dir}
-        cp {params.fasta} {output.fasta}
+        if [ "{params.main_chr_file}" == "" ] || [ "{params.main_chr_file}" == "NA" ]; then
+            echo "Error: main_chr_file is not provided." >&2
+            exit 1
+        fi
 
-        # Just index, do NOT rename or filter chromosome names here
-        samtools faidx {output.fasta}
+        if [ ! -s "{params.main_chr_file}" ]; then
+            echo "Error: main_chr_file does not exist or is empty: {params.main_chr_file}" >&2
+            exit 1
+        fi
+
+        mkdir -p "{params.organism_dir}"
+
+        # Atomic copy to avoid occasional truncation on parallel file systems
+        tmp_fa="{output.fasta}.tmp"
+        rm -f "$tmp_fa" "{output.fasta}" "{output.fai}"
+        cat "{params.fasta}" > "$tmp_fa"
+        mv -f "$tmp_fa" "{output.fasta}"
+
+        # Build FASTA index for the copied genome
+        samtools faidx "{output.fasta}"
+
+        # Clean chromosome list:
+        # keep only the first column and strip CRLF if present
+        awk 'NF > 0 {{gsub(/\r/,"",$1); print $1}}' "{params.main_chr_file}" > "{params.organism_dir}/main_chroms.txt"
+
+        if [ ! -s "{params.organism_dir}/main_chroms.txt" ]; then
+            echo "ERROR: parsed main_chroms.txt is empty; check chromosome list file." >&2
+            exit 1
+        fi
+
+        echo "[copy_fasta] kept chroms: $(paste -sd' ' "{params.organism_dir}/main_chroms.txt")" >> "{log}"
+
+        # Filter FASTA to requested chromosomes, then rebuild index
+        samtools faidx "{output.fasta}" $(paste -sd' ' "{params.organism_dir}/main_chroms.txt") > "{params.organism_dir}/{wildcards.organism}_filtered.fa"
+        mv "{params.organism_dir}/{wildcards.organism}_filtered.fa" "{output.fasta}"
+        samtools faidx "{output.fasta}"
         """
-
-
+        
 rule generate_chrom_sizes:
     input:
         fai=output_dir + "/organisms/{organism}/{organism}.fa.fai"
@@ -280,7 +297,7 @@ rule prepare_promoter_annotation:
         filtered_gtf=output_dir + "/organisms/{organism}/Annotation/proActiv_protein_coding.gtf",
         txdb=output_dir + "/organisms/{organism}/Annotation/proActiv_txdb.sqlite"
     params:
-        species=lambda wildcards: get_species(wildcards.organism),
+        species=lambda wc: wc.organism,
         output_dir=output_dir + "/organisms/{organism}",
         script=workflow.basedir + "/../scripts/proactiv_prepare_promoter_annotation.R"
     conda: "envs/r.yaml"
