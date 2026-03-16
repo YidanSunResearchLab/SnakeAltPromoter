@@ -13,11 +13,16 @@ setup(
     include_package_data=True,
     install_requires=[
         "snakemake>=8.28.0",  # Core dependency
-        "streamlit",          # UI dependencies now default
+        "streamlit",  # UI dependencies now default
         "pyarrow",
         "pandas",
+        "pyyaml",
     ],
-
+    extras_require={
+        "test": [
+            "pytest",
+        ]
+    },
     # When `pyproject.toml` is present, `setup.py` is not the entry point
     # during install. However, it may be still read indirectly for consultation
     #  - i.e. if it's called by `pyproject.toml`. For e.g. all build actions in

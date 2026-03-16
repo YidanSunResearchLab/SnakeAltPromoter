@@ -26,6 +26,7 @@ dependencies = [
     "streamlit",
     "pyarrow",
     "pandas",
+    "pyyaml",
 ]
 requires-python = ">=3.11"
 
@@ -55,6 +56,9 @@ packages = [
 
 [tool.setuptools.package-data]
 snakealtpromoter = [
+    "data/*",
+    "data/samplesheet/*",
+    "docs/*",
     "rules/*.Snakefile",
     "rules/envs/*.yaml",
     "ui/*.py",
@@ -66,3 +70,9 @@ snakealtpromoter = [
 homepage = "https://github.com/YidanSunResearchLab/SnakeAltPromoter"
 repository = "https://github.com/YidanSunResearchLab/SnakeAltPromoter"
 issues = "https://github.com/YidanSunResearchLab/SnakeAltPromoter/issues"
+
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
