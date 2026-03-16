@@ -8,9 +8,11 @@ import stat
 def create_fake_snakemake(bin_dir):
     bin_dir.mkdir(parents=True, exist_ok=True)
     if os.name == "nt":
-        script_path = bin_dir / "snakemake.cmd"
-        script_path.write_text("@echo off\r\necho fake snakemake\r\nexit /b 0\r\n")
-        return script_path
+        cmd_path = bin_dir / "snakemake.cmd"
+        bat_path = bin_dir / "snakemake.bat"
+        cmd_path.write_text("@echo off\r\necho fake snakemake\r\nexit /b 0\r\n")
+        bat_path.write_text("@echo off\r\necho fake snakemake\r\nexit /b 0\r\n")
+        return cmd_path
 
     script_path = bin_dir / "snakemake"
     script_path.write_text("#!/bin/sh\necho 'fake snakemake'\nexit 0\n")
@@ -48,4 +50,11 @@ def create_fastqs(input_dir, sample="sample1", paired=True):
 def env_with_fake_snakemake(base_env, bin_dir):
     env = dict(base_env)
     env["PATH"] = f"{bin_dir}{os.pathsep}{env.get('PATH', '')}"
+    if os.name == "nt":
+        pathext = env.get("PATHEXT", "")
+        preferred = ".CMD;.BAT;.EXE;.COM"
+        if pathext:
+            env["PATHEXT"] = f"{preferred};{pathext}"
+        else:
+            env["PATHEXT"] = preferred
     return env
