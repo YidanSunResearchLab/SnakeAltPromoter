@@ -7,6 +7,11 @@ import stat
 
 def create_fake_snakemake(bin_dir):
     bin_dir.mkdir(parents=True, exist_ok=True)
+    if os.name == "nt":
+        script_path = bin_dir / "snakemake.cmd"
+        script_path.write_text("@echo off\r\necho fake snakemake\r\nexit /b 0\r\n")
+        return script_path
+
     script_path = bin_dir / "snakemake"
     script_path.write_text("#!/bin/sh\necho 'fake snakemake'\nexit 0\n")
     script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
