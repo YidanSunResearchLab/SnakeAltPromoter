@@ -248,7 +248,7 @@ While we aim to maintain long-term support for SnakeAltPromoter, development pri
 If you use **SnakeAltPromoter**, please cite:
 
 > Tan J. *et al.* (2025). **SnakeAltPromoter Facilitates Differential Alternative Promoter Analysis.**
-> *bioRxiv*. [https://doi.org/10.1101/2025.08.16.669128](https://www.biorxiv.org/content/10.1101/2025.08.16.669128v1)
+> *Computational and Structural Biotechnology Journal*. [https://spj.science.org/doi/abs/10.34133/csbj.0033]
 
 ---
 
