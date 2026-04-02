@@ -1,7 +1,7 @@
 # 🧬 SnakeAltPromoter Facilitates Differential Alternative Promoter Analysis
 
 **SnakeAltPromoter** is a **Snakemake-based pipeline** for streamlined, reproducible, and scalable analysis of **alternative promoter usage** from RNA-seq or CAGE data.
-It integrates all major steps—from raw read preprocessing to promoter-level quantification and differential analysis using state-of-the-art tools.
+It integrates all major steps: from raw read preprocessing to promoter-level quantification and differential analysis using state-of-the-art tools.
 
 ## 🧭 Workflow Overview
 
